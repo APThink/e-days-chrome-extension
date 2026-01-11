@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      width: 240px;
+      padding: 16px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 14px;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      color: #e4e4e7;
+    }
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .nav button {
+      padding: 6px 14px;
+      cursor: pointer;
+      background: rgba(255,255,255,0.1);
+      border: none;
+      color: #e4e4e7;
+      border-radius: 8px;
+      font-size: 12px;
+      transition: all 0.2s;
+    }
+    .nav button:hover {
+      background: rgba(255,255,255,0.2);
+      transform: scale(1.05);
+    }
+    .nav button:disabled {
+      opacity: 0.3;
+      cursor: default;
+      transform: none;
+    }
+    #day {
+      font-weight: 600;
+      font-size: 13px;
+    }
+    #stats {
+      background: rgba(255,255,255,0.05);
+      border-radius: 12px;
+      padding: 12px;
+    }
+    .row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+    }
+    .row:not(:last-child) {
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .row span:last-child {
+      font-weight: 600;
+      color: #a78bfa;
+    }
+    .status {
+      margin-top: 12px;
+      padding: 10px;
+      background: rgba(139, 92, 246, 0.15);
+      border-radius: 10px;
+      text-align: center;
+      font-size: 13px;
+      border: 1px solid rgba(139, 92, 246, 0.2);
+    }
+    .hidden {
+      display: none;
+    }
+    #goToPage {
+      margin-top: 12px;
+      padding: 10px;
+      cursor: pointer;
+      width: 100%;
+      background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+      border: none;
+      color: white;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    #goToPage:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+    }
+  </style>
+</head>
+<body>
+  <div id="content">
+    <div class="nav">
+      <button id="prev">◀</button>
+      <span id="day">-</span>
+      <button id="next">▶</button>
+    </div>
+    <div id="stats">
+      <div class="row">
+        <span>🔨 Arbeit</span>
+        <span id="work">-</span>
+      </div>
+      <div class="row">
+        <span>☕ Pausen</span>
+        <span id="pause">-</span>
+      </div>
+    </div>
+  </div>
+  <div class="status" id="status">Laden...</div>
+  <button id="goToPage" class="hidden">📋 Zur Zeiterfassung</button>
+  <script type="module" src="./popup.js"></script>
+</body>
+</html>
