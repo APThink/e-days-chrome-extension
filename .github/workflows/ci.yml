@@ -6,7 +6,10 @@ on:
   pull_request:
     branches: [ main, master ]
   release:
-    types: [ created ]
+    types: [ published ]
+
+permissions:
+  contents: write
 
 jobs:
   test:
@@ -50,12 +53,10 @@ jobs:
       - name: Create zip archive
         run: |
           cd dist
-          zip -r ../work-tracker-${{ github.event.release.tag_name }}.zip .
+          zip -r ../e-days-chrome-extension-${{ github.event.release.tag_name }}.zip .
           cd ..
 
       - name: Upload Release Asset
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
-          files: work-tracker-${{ github.event.release.tag_name }}.zip
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          files: e-days-chrome-extension-${{ github.event.release.tag_name }}.zip
