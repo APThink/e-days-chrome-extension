@@ -35,13 +35,23 @@ export const config = {
 
 ## In Chrome laden
 
+**WICHTIG:** Vor der Installation muss die e-days URL konfiguriert werden.
+
+1. ZIP vom aktuellen Release herunterladen und entpacken
+2. `dist/config.js` mit einem Texteditor öffnen
+3. URL anpassen:
+```javascript
+export const config = {
+  allowedUrl: 'https://deine-firma.e-days.com/TimeSubmission'
+};
+```
+
 1. `chrome://extensions/` öffnen
 2. "Entwicklermodus" aktivieren
 3. "Entpackte Erweiterung laden"
 4. `dist/` Ordner auswählen
 
 ## Nutzung
-
 1. e-days TimeSubmission Seite öffnen
 2. Extension-Icon klicken
 3. Statistik für heute anschauen
