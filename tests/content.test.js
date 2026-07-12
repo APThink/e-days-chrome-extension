@@ -1,5 +1,5 @@
 ﻿// @vitest-environment jsdom
-import { extractTimes, isTodayContainer, statusText, buildInfoText, ensureInfoElement, updateAll, init, INFO_CLASS } from '../src/content.js';
+import { extractTimes, isTodayContainer, statusText, buildInfoText, ensureInfoElement, ensureWarningElement, updateAll, init, INFO_CLASS, WARNING_CLASS } from '../src/content.js';
 
 function buildDayContainer({ periods = [], isToday = false } = {}) {
   const container = document.createElement('div');
@@ -108,7 +108,7 @@ describe('ensureInfoElement', () => {
   test('creates the info element right after the header', () => {
     const container = buildDayContainer({ periods: ['08:00', '12:00'] });
     const el = ensureInfoElement(container);
-    expect(el.className).toBe(INFO_CLASS);
+    expect(el.classList.contains(INFO_CLASS)).toBe(true);
     expect(container.querySelector('.timesheet_day_header').nextElementSibling).toBe(el);
   });
 
@@ -125,6 +125,48 @@ describe('ensureInfoElement', () => {
     container.className = 'tt_day_container';
     document.body.appendChild(container);
     expect(ensureInfoElement(container)).toBeNull();
+  });
+});
+
+describe('ensureInfoElement day styling', () => {
+  test('applies is-today for the today container', () => {
+    const container = buildDayContainer({ periods: ['08:00'], isToday: true });
+    const el = ensureInfoElement(container);
+    expect(el.classList.contains('is-today')).toBe(true);
+    expect(el.classList.contains('is-other')).toBe(false);
+  });
+
+  test('applies is-other for a non-today container', () => {
+    const container = buildDayContainer({ periods: ['08:00'] });
+    const el = ensureInfoElement(container);
+    expect(el.classList.contains('is-other')).toBe(true);
+    expect(el.classList.contains('is-today')).toBe(false);
+  });
+});
+
+describe('ensureWarningElement', () => {
+  test('creates the warning element right after the info element', () => {
+    const container = buildDayContainer({ periods: ['08:00', '12:00'] });
+    ensureInfoElement(container);
+    const el = ensureWarningElement(container);
+    expect(el.classList.contains(WARNING_CLASS)).toBe(true);
+    expect(container.querySelector(`.${INFO_CLASS}`).nextElementSibling).toBe(el);
+  });
+
+  test('reuses the existing warning element on a second call', () => {
+    const container = buildDayContainer({ periods: ['08:00', '12:00'] });
+    ensureInfoElement(container);
+    const first = ensureWarningElement(container);
+    const second = ensureWarningElement(container);
+    expect(second).toBe(first);
+    expect(container.querySelectorAll(`.${WARNING_CLASS}`).length).toBe(1);
+  });
+
+  test('returns null when there is no info element to anchor to', () => {
+    const container = document.createElement('div');
+    container.className = 'tt_day_container';
+    document.body.appendChild(container);
+    expect(ensureWarningElement(container)).toBeNull();
   });
 });
 
@@ -151,6 +193,32 @@ describe('updateAll', () => {
 
     expect(container.querySelectorAll(`.${INFO_CLASS}`).length).toBe(1);
     expect(container.querySelector(`.${INFO_CLASS}`).textContent).toContain('Arbeit: 4h 0m');
+  });
+});
+
+describe('updateAll break warning', () => {
+  test('shows no warning for a day under the threshold', () => {
+    buildDayContainer({ periods: ['09:00', '14:00'] }); // 5h worked
+    updateAll();
+    const warning = document.querySelector(`.${WARNING_CLASS}`);
+    expect(warning.textContent).toBe('');
+    expect(warning.style.display).toBe('none');
+  });
+
+  test('shows a blinking warning when worked over 6h without a qualifying break', () => {
+    buildDayContainer({ periods: ['08:00', '12:00', '12:10', '15:01'] }); // 6h51m worked, 10min break
+    updateAll();
+    const warning = document.querySelector(`.${WARNING_CLASS}`);
+    expect(warning.textContent).toBe('⚠️ Noch 0h 30m Pause nötig');
+    expect(warning.style.display).toBe('');
+  });
+
+  test('clears the warning once a 15+ minute break satisfies the requirement', () => {
+    buildDayContainer({ periods: ['08:00', '12:00', '12:35', '16:01'] }); // 7h26m worked, 35min break
+    updateAll();
+    const warning = document.querySelector(`.${WARNING_CLASS}`);
+    expect(warning.textContent).toBe('');
+    expect(warning.style.display).toBe('none');
   });
 });
 

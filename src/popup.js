@@ -1,6 +1,7 @@
 import { formatTime } from './lib/timeUtils.js';
 import { getTodayIndex, formatDayLabel } from './lib/dateUtils.js';
 import { calcStats } from './lib/statsCalculator.js';
+import { evaluateBreakCompliance } from './lib/breakCompliance.js';
 import { ChromeService } from './services/chromeService.js';
 import { config } from './config.js';
 
@@ -58,7 +59,8 @@ class PopupController {
       this.updateNavigation(isToday, weekNum);
 
       const stats = calcStats(times, isToday);
-      this.render(stats);
+      const compliance = evaluateBreakCompliance(times, isToday);
+      this.render(stats, compliance);
     } catch (error) {
       this.showError(error.message);
     }
@@ -66,14 +68,17 @@ class PopupController {
 
   updateNavigation(isToday, weekNum) {
     const label = formatDayLabel(this.currentDayIndex, weekNum, isToday);
-    document.getElementById('day').textContent = label;
+    const dayEl = document.getElementById('day');
+    dayEl.textContent = label;
+    dayEl.classList.toggle('day-other', !isToday);
     document.getElementById('prev').disabled = this.currentDayIndex <= 0;
     document.getElementById('next').disabled = this.currentDayIndex >= 6;
   }
 
-  render(stats) {
+  render(stats, compliance) {
     const statsEl = document.getElementById('stats');
     const statusEl = document.getElementById('status');
+    const warningEl = document.getElementById('warning');
 
     document.getElementById('content').classList.remove('hidden');
     statsEl.classList.remove('hidden');
@@ -89,11 +94,20 @@ class PopupController {
     } else {
       statusEl.textContent = `📭 Keine Einträge`;
     }
+
+    if (compliance.isBreached) {
+      warningEl.textContent = `⚠️ Noch ${formatTime(compliance.missingMins)} Pause nötig`;
+      warningEl.classList.remove('hidden');
+    } else {
+      warningEl.textContent = '';
+      warningEl.classList.add('hidden');
+    }
   }
 
   showError(message) {
     document.getElementById('stats').classList.add('hidden');
     document.getElementById('content').classList.add('hidden');
+    document.getElementById('warning').classList.add('hidden');
     document.getElementById('status').textContent = '❌ ' + message;
   }
 
