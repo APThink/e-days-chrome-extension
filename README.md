@@ -11,8 +11,8 @@ Bei e-days muss man die Arbeitszeit und Pausen immer im Kopf zusammenrechnen. Di
 
 ## Funktionen
 
-- Tagesstatistik auf einen Blick
-- Navigation durch Wochentage
+- Automatische Anzeige von Arbeitszeit, Pause und Status direkt unter jedem Tag auf der Zeiterfassungsseite — kein Klick nötig
+- Popup als Zweitansicht: Tagesstatistik auf einen Blick, Navigation durch Wochentage
 - Echtzeit-Status
 - Funktioniert nur wenn e-days TimeSubmission Tab offen ist
 
@@ -53,9 +53,8 @@ export const config = {
 
 ## Nutzung
 1. e-days TimeSubmission Seite öffnen
-2. Extension-Icon klicken
-3. Statistik für heute anschauen
-4. Mit ◀ ▶ durch Wochentage navigieren
+2. Arbeitszeit, Pause und Status erscheinen automatisch in Rot unter jedem Tag
+3. Optional: Extension-Icon klicken, um dieselbe Statistik im Popup zu sehen und mit ◀ ▶ durch Wochentage zu navigieren
 
 ## Entwicklung
 ```bash
