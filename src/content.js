@@ -1,5 +1,6 @@
 ﻿import { formatTime } from './lib/timeUtils.js';
 import { calcStats } from './lib/statsCalculator.js';
+import { evaluateBreakCompliance } from './lib/breakCompliance.js';
 
 export function extractTimes(container) {
   return [...container.querySelectorAll('input[type="time"]')]
@@ -32,20 +33,54 @@ export function buildInfoText(container, now = new Date()) {
 }
 
 export const INFO_CLASS = 'edays-tracker-day-info';
+export const WARNING_CLASS = 'edays-tracker-warning';
+const STYLE_ID = 'edays-tracker-styles';
+
+export function injectStyles() {
+  if (document.getElementById(STYLE_ID)) return;
+  const style = document.createElement('style');
+  style.id = STYLE_ID;
+  style.textContent = `
+    .${INFO_CLASS} { font-size: 13px; padding: 4px 16px 8px; }
+    .${INFO_CLASS}.is-today { color: #111827; font-weight: 600; }
+    .${INFO_CLASS}.is-other { color: #6b7280; font-weight: 500; }
+    .${WARNING_CLASS} { color: #dc2626; font-weight: 700; font-size: 13px; padding: 0 16px 8px; animation: edays-blink 1s ease-in-out infinite; }
+    @keyframes edays-blink { 50% { opacity: 0.35; } }
+    @media (prefers-reduced-motion: reduce) {
+      .${WARNING_CLASS} { animation: none; }
+    }
+  `;
+  document.head.appendChild(style);
+}
 
 export function ensureInfoElement(container) {
   const header = container.querySelector('.timesheet_day_header');
   if (!header) return null;
 
+  injectStyles();
+
   let el = container.querySelector(`.${INFO_CLASS}`);
   if (!el) {
     el = document.createElement('div');
     el.className = INFO_CLASS;
-    el.style.color = '#d32f2f';
-    el.style.fontWeight = '600';
-    el.style.fontSize = '13px';
-    el.style.padding = '4px 16px 8px';
     header.insertAdjacentElement('afterend', el);
+  }
+
+  el.classList.toggle('is-today', isTodayContainer(container));
+  el.classList.toggle('is-other', !isTodayContainer(container));
+
+  return el;
+}
+
+export function ensureWarningElement(container) {
+  const infoEl = container.querySelector(`.${INFO_CLASS}`);
+  if (!infoEl) return null;
+
+  let el = container.querySelector(`.${WARNING_CLASS}`);
+  if (!el) {
+    el = document.createElement('div');
+    el.className = WARNING_CLASS;
+    infoEl.insertAdjacentElement('afterend', el);
   }
   return el;
 }
@@ -58,6 +93,19 @@ export function updateAll(root = document) {
     if (el.textContent !== text) {
       el.textContent = text;
     }
+
+    const warningEl = ensureWarningElement(container);
+    if (!warningEl) return;
+    const times = extractTimes(container);
+    const isToday = isTodayContainer(container);
+    const compliance = evaluateBreakCompliance(times, isToday);
+    const warningText = compliance.isBreached
+      ? `⚠️ Noch ${formatTime(compliance.missingMins)} Pause nötig`
+      : '';
+    if (warningEl.textContent !== warningText) {
+      warningEl.textContent = warningText;
+    }
+    warningEl.style.display = compliance.isBreached ? '' : 'none';
   });
 }
 
