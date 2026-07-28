@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "prebuild": "node scripts/ensure-config.js",
     "build": "vite build && vite build --config vite.content.config.js",
     "pretest": "node scripts/ensure-config.js",
     "test": "vitest run",
