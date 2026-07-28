@@ -102,6 +102,24 @@ describe('buildInfoText', () => {
     const text = buildInfoText(container);
     expect(text).toBe('Arbeit: 0h 0m · Pause: 0h 0m · 📭 Keine Einträge');
   });
+
+  test('today mid-shift on a weekday shows the projected end time', () => {
+    const container = buildDayContainer({ periods: ['09:00'], isToday: true });
+    const text = buildInfoText(container, new Date('2026-07-06T10:30:00')); // Monday
+    expect(text).toBe('Arbeit: 1h 30m · Pause: 0h 0m · 🔨 Arbeitest seit 09:00 · 🏁 Feierabend ca. 17:00');
+  });
+
+  test('does not show a projection once the target is already reached', () => {
+    const container = buildDayContainer({ periods: ['09:00'], isToday: true });
+    const text = buildInfoText(container, new Date('2026-07-06T17:00:00')); // Monday, 8h worked
+    expect(text).not.toContain('Feierabend');
+  });
+
+  test('does not show a projection for a completed (non-today) day', () => {
+    const container = buildDayContainer({ periods: ['08:28', '12:20', '12:56', '17:48'] });
+    const text = buildInfoText(container, new Date('2026-07-06T20:00:00'));
+    expect(text).not.toContain('Feierabend');
+  });
 });
 
 describe('ensureInfoElement', () => {

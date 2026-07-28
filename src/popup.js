@@ -1,7 +1,9 @@
-import { formatTime } from './lib/timeUtils.js';
+import { formatTime, formatClockTime } from './lib/timeUtils.js';
 import { getTodayIndex, formatDayLabel } from './lib/dateUtils.js';
 import { calcStats } from './lib/statsCalculator.js';
 import { evaluateBreakCompliance } from './lib/breakCompliance.js';
+import { getTargetMinutes } from './lib/targetTime.js';
+import { calcProjectedEnd } from './lib/projectedEnd.js';
 import { ChromeService } from './services/chromeService.js';
 import { config } from './config.js';
 
@@ -60,7 +62,10 @@ class PopupController {
 
       const stats = calcStats(times, isToday);
       const compliance = evaluateBreakCompliance(times, isToday);
-      this.render(stats, compliance);
+      const projection = isToday
+        ? calcProjectedEnd(stats, getTargetMinutes(this.currentDayIndex, config.targetHours))
+        : null;
+      this.render(stats, compliance, projection);
     } catch (error) {
       this.showError(error.message);
     }
@@ -75,15 +80,25 @@ class PopupController {
     document.getElementById('next').disabled = this.currentDayIndex >= 6;
   }
 
-  render(stats, compliance) {
+  render(stats, compliance, projection) {
     const statsEl = document.getElementById('stats');
     const statusEl = document.getElementById('status');
     const warningEl = document.getElementById('warning');
+    const projectedEndRow = document.getElementById('projectedEndRow');
+    const projectedEndEl = document.getElementById('projectedEnd');
 
     document.getElementById('content').classList.remove('hidden');
     statsEl.classList.remove('hidden');
     document.getElementById('work').textContent = formatTime(stats.workMins);
     document.getElementById('pause').textContent = formatTime(stats.pauseMins);
+
+    if (projection) {
+      projectedEndEl.textContent = formatClockTime(projection.projectedEndMins);
+      projectedEndRow.classList.remove('hidden');
+    } else {
+      projectedEndEl.textContent = '-';
+      projectedEndRow.classList.add('hidden');
+    }
 
     if (stats.state === 'working') {
       statusEl.textContent = `🔨 Arbeitest seit ${stats.lastTime}`;
