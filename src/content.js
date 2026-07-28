@@ -1,6 +1,10 @@
-﻿import { formatTime } from './lib/timeUtils.js';
+﻿import { formatTime, formatClockTime } from './lib/timeUtils.js';
 import { calcStats } from './lib/statsCalculator.js';
 import { evaluateBreakCompliance } from './lib/breakCompliance.js';
+import { getTargetMinutes } from './lib/targetTime.js';
+import { calcProjectedEnd } from './lib/projectedEnd.js';
+import { getTodayIndex } from './lib/dateUtils.js';
+import { config } from './config.js';
 
 export function extractTimes(container) {
   return [...container.querySelectorAll('input[type="time"]')]
@@ -29,7 +33,17 @@ export function buildInfoText(container, now = new Date()) {
   const times = extractTimes(container);
   const isToday = isTodayContainer(container);
   const stats = calcStats(times, isToday, now);
-  return `Arbeit: ${formatTime(stats.workMins)} · Pause: ${formatTime(stats.pauseMins)} · ${statusText(stats)}`;
+  let text = `Arbeit: ${formatTime(stats.workMins)} · Pause: ${formatTime(stats.pauseMins)} · ${statusText(stats)}`;
+
+  if (isToday) {
+    const targetMins = getTargetMinutes(getTodayIndex(now), config.targetHours);
+    const projection = calcProjectedEnd(stats, targetMins, now);
+    if (projection) {
+      text += ` · 🏁 Feierabend ca. ${formatClockTime(projection.projectedEndMins)}`;
+    }
+  }
+
+  return text;
 }
 
 export const INFO_CLASS = 'edays-tracker-day-info';

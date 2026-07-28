@@ -1,4 +1,4 @@
-import { formatTime, toMinutes } from '../src/lib/timeUtils.js';
+import { formatTime, toMinutes, formatClockTime } from '../src/lib/timeUtils.js';
 
 describe('timeUtils', () => {
   describe('formatTime', () => {
@@ -18,6 +18,23 @@ describe('timeUtils', () => {
       expect(toMinutes('08:00')).toBe(480);
       expect(toMinutes('12:30')).toBe(750);
       expect(toMinutes('17:00')).toBe(1020);
+    });
+  });
+
+  describe('formatClockTime', () => {
+    test('formats minutes as zero-padded HH:MM', () => {
+      expect(formatClockTime(0)).toBe('00:00');
+      expect(formatClockTime(90)).toBe('01:30');
+      expect(formatClockTime(1020)).toBe('17:00');
+    });
+
+    test('pads single-digit hours and minutes', () => {
+      expect(formatClockTime(65)).toBe('01:05');
+    });
+
+    test('wraps past midnight (>= 24h)', () => {
+      expect(formatClockTime(1440)).toBe('00:00');
+      expect(formatClockTime(1500)).toBe('01:00');
     });
   });
 });
