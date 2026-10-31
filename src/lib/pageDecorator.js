@@ -8,7 +8,7 @@ const STYLE_ID = 'edays-tracker-styles';
 
 function summarize(day, now) {
   return summarizeDay({
-    times: day.times,
+    periods: day.periods,
     isToday: day.isToday,
     weekdayIndex: day.weekdayIndex,
     targetHours: config.targetHours,

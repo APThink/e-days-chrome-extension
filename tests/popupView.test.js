@@ -49,7 +49,7 @@ describe('popup view', () => {
   });
 
   test('disables prev on Monday', async () => {
-    await mount({ week: { days: [{ date: '2026-07-06', weekdayIndex: 0, isToday: false, times: [] }] } });
+    await mount({ week: { days: [{ date: '2026-07-06', weekdayIndex: 0, isToday: false, periods: [] }] } });
     for (let i = 0; i < 2; i++) document.getElementById('prev').click();
 
     expect(document.getElementById('prev').disabled).toBe(true);

@@ -6,11 +6,11 @@ Domain terms for the e-days Tracker. Use these in code, tests and reviews.
 
 **Day**: one `timesheet-day-<yyyy-mm-dd>` container on the Timesheet. Has a date, a weekday, and a list of Periods.
 
-**Period**: one start/end row inside a Day. The end may be empty while the Period is open.
+**Period**: one start/end row inside a Day. It always has a start; the end is empty while the Period is open. Rows without a start are not Periods.
 
-**Time entry**: a single start or end value (`HH:MM`) of a Period. A Day's times are its Time entries in order: start, end, start, end, …
+**Time entry**: the start or end value (`HH:MM`) of a Period.
 
-**Timesheet reader**: the module that turns the Timesheet DOM into plain data (Days with date, weekday, Time entries and `isToday`, no DOM references) and locates the Info row anchor. The only module that knows the e-days page layout.
+**Timesheet reader**: the module that turns the Timesheet DOM into plain data (Days with date, weekday, Periods and `isToday`, no DOM references) and locates the Info row anchor. The only module that knows the e-days page layout.
 
 **Info row anchor**: the element of a Day after which its Info row is mounted (the Day's header). Located by the Timesheet reader; a Day without one is skipped.
 

@@ -11,18 +11,17 @@ function readTimeField(fieldEl) {
   return `${hh.padStart(2, '0')}:${mm.padStart(2, '0')}`;
 }
 
-function readTimes(container) {
-  const times = [];
-  container.querySelectorAll('[class*="_period-container_"]').forEach((period) => {
-    const fields = [...period.querySelectorAll('[class*="_col-time_"]')].filter(
+function readPeriods(container) {
+  const periods = [];
+  container.querySelectorAll('[class*="_period-container_"]').forEach((row) => {
+    const fields = [...row.querySelectorAll('[class*="_col-time_"]')].filter(
       (field) => !field.querySelector('input:disabled')
     );
     const start = fields[0] && readTimeField(fields[0]);
-    const end = fields[1] && readTimeField(fields[1]);
-    if (start) times.push(start);
-    if (end) times.push(end);
+    if (!start) return;
+    periods.push({ start, end: (fields[1] && readTimeField(fields[1])) || null });
   });
-  return times;
+  return periods;
 }
 
 export function locateInfoRowAnchor(date, root = document) {
@@ -38,7 +37,7 @@ export function readTimesheet(root = document, now = new Date()) {
       date,
       isToday: date === todayDate,
       weekdayIndex: getWeekdayIndex(parseISODate(date)),
-      times: readTimes(container),
+      periods: readPeriods(container),
     };
   });
   return { days };
