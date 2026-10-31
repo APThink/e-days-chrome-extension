@@ -1,0 +1,101 @@
+import { summarizeDay } from './daySummary.js';
+import { readTimesheet } from './timesheetReader.js';
+import { config } from '../config.js';
+
+export const INFO_CLASS = 'edays-tracker-day-info';
+export const WARNING_CLASS = 'edays-tracker-warning';
+const STYLE_ID = 'edays-tracker-styles';
+
+function summarize(day, now) {
+  return summarizeDay({
+    times: day.times,
+    isToday: day.isToday,
+    weekdayIndex: day.weekdayIndex,
+    targetHours: config.targetHours,
+    now,
+  });
+}
+
+function infoLine(summary) {
+  let text = `Arbeit: ${summary.work} · Pause: ${summary.pause} · ${summary.status}`;
+  if (summary.feierabend) {
+    text += ` · 🏁 Feierabend ca. ${summary.feierabend}`;
+  }
+  return text;
+}
+
+function injectStyles() {
+  if (document.getElementById(STYLE_ID)) return;
+  const style = document.createElement('style');
+  style.id = STYLE_ID;
+  style.textContent = `
+    .${INFO_CLASS} {
+      font-size: 13px;
+      line-height: 1.4;
+      padding: 10px 20px;
+      border-top: 1px solid var(--greyscale-90, #e5e7eb);
+    }
+    .${INFO_CLASS}.is-today { color: var(--greyscale-10, #111827); font-weight: 600; }
+    .${INFO_CLASS}.is-other { color: var(--greyscale-30, #6b7280); font-weight: 500; }
+    .${WARNING_CLASS} {
+      color: #dc2626;
+      font-weight: 700;
+      font-size: 13px;
+      padding: 0 20px 10px;
+      animation: edays-blink 1s ease-in-out infinite;
+    }
+    @keyframes edays-blink { 50% { opacity: 0.35; } }
+    @media (prefers-reduced-motion: reduce) {
+      .${WARNING_CLASS} { animation: none; }
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+function ensureInfoElement(container, isToday) {
+  const header = container.querySelector('[class*="_top-row_"]');
+  if (!header) return null;
+
+  injectStyles();
+
+  let el = container.querySelector(`.${INFO_CLASS}`);
+  if (!el) {
+    el = document.createElement('div');
+    el.className = INFO_CLASS;
+    header.insertAdjacentElement('afterend', el);
+  }
+
+  el.classList.toggle('is-today', isToday);
+  el.classList.toggle('is-other', !isToday);
+
+  return el;
+}
+
+function ensureWarningElement(container, infoEl) {
+  let el = container.querySelector(`.${WARNING_CLASS}`);
+  if (!el) {
+    el = document.createElement('div');
+    el.className = WARNING_CLASS;
+    infoEl.insertAdjacentElement('afterend', el);
+  }
+  return el;
+}
+
+export function decorateTimesheet(root = document, now = new Date()) {
+  readTimesheet(root, now).days.forEach((day) => {
+    const el = ensureInfoElement(day.element, day.isToday);
+    if (!el) return;
+    const summary = summarize(day, now);
+    const text = infoLine(summary);
+    if (el.textContent !== text) {
+      el.textContent = text;
+    }
+
+    const warningEl = ensureWarningElement(day.element, el);
+    const warningText = summary.warning ?? '';
+    if (warningEl.textContent !== warningText) {
+      warningEl.textContent = warningText;
+    }
+    warningEl.style.display = summary.warning ? '' : 'none';
+  });
+}

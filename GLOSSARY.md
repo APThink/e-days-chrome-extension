@@ -21,3 +21,9 @@ Domain terms for the e-days Tracker. Use these in code, tests and reviews.
 **Qualifying break**: a gap of at least 15 minutes. Only these count towards the legal break requirement (30 min above 6h, 45 min above 9h of Work).
 
 **Feierabend**: the projected end of today's workday: now plus the remaining Work to reach that weekday's target hours.
+
+**Info row**: the line injected under a Day's header on the Timesheet (Work, Pause, status, Feierabend).
+
+**Warning row**: the blinking break warning injected directly under the Info row. Hidden when there is nothing to warn about.
+
+**Page decorator**: the module that keeps the Info row and Warning row of every Day in sync with the Timesheet (`decorateTimesheet`).
