@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { statusText, buildInfoText, ensureInfoElement, ensureWarningElement, updateAll, init, INFO_CLASS, WARNING_CLASS } from '../src/content.js';
+import { buildInfoText, ensureInfoElement, ensureWarningElement, updateAll, init, INFO_CLASS, WARNING_CLASS } from '../src/content.js';
 
 import { PAST_DATE, buildDayContainer, buildWeekLabel } from './fixtures/timesheetDom.js';
 import { READ_TIMESHEET_MESSAGE } from '../src/lib/timesheetReader.js';
@@ -8,54 +8,42 @@ afterEach(() => {
   document.body.innerHTML = '';
 });
 
-describe('statusText', () => {
-  test('working state', () => {
-    expect(statusText({ state: 'working', lastTime: '08:28' })).toBe('🔨 Arbeitest seit 08:28');
-  });
-
-  test('away state', () => {
-    expect(statusText({ state: 'away', awayMins: 30, lastTime: '17:00' })).toBe('🚶 Weg: 0h 30m (seit 17:00)');
-  });
-
-  test('done state', () => {
-    expect(statusText({ state: 'done' })).toBe('🏠 Tag abgeschlossen');
-  });
-
-  test('empty state', () => {
-    expect(statusText({ state: 'empty' })).toBe('📭 Keine Einträge');
-  });
-});
-
 describe('buildInfoText', () => {
   const completed = ['08:28', '12:20', '12:56', '17:48'];
 
   test('completed (non-today) day', () => {
-    const text = buildInfoText({ times: completed, isToday: false }, new Date('2026-07-07T20:00:00'));
+    const text = buildInfoText({ times: completed, isToday: false, weekdayIndex: 0 }, new Date('2026-07-07T20:00:00'));
     expect(text).toBe('Arbeit: 8h 44m · Pause: 0h 36m · 🏠 Tag abgeschlossen');
   });
 
   test('today mid-shift', () => {
-    const text = buildInfoText({ times: ['09:00'], isToday: true }, new Date('2026-07-12T10:30:00'));
+    const text = buildInfoText({ times: ['09:00'], isToday: true, weekdayIndex: 6 }, new Date('2026-07-12T10:30:00'));
     expect(text).toBe('Arbeit: 1h 30m · Pause: 0h 0m · 🔨 Arbeitest seit 09:00');
   });
 
   test('future/empty day', () => {
-    const text = buildInfoText({ times: [], isToday: false });
+    const text = buildInfoText({ times: [], isToday: false, weekdayIndex: 0 });
     expect(text).toBe('Arbeit: 0h 0m · Pause: 0h 0m · 📭 Keine Einträge');
   });
 
   test('today mid-shift on a weekday shows the projected end time', () => {
-    const text = buildInfoText({ times: ['09:00'], isToday: true }, new Date('2026-07-06T10:30:00')); // Monday
+    const text = buildInfoText({ times: ['09:00'], isToday: true, weekdayIndex: 0 }, new Date('2026-07-06T10:30:00')); // Monday
     expect(text).toBe('Arbeit: 1h 30m · Pause: 0h 0m · 🔨 Arbeitest seit 09:00 · 🏁 Feierabend ca. 17:00');
   });
 
+  test('takes the target from the weekday of the day itself, not from now', () => {
+    // Saturday has a 0h target by default, even though "now" falls on a Monday.
+    const text = buildInfoText({ times: ['09:00'], isToday: true, weekdayIndex: 5 }, new Date('2026-07-06T10:30:00'));
+    expect(text).not.toContain('Feierabend');
+  });
+
   test('does not show a projection once the target is already reached', () => {
-    const text = buildInfoText({ times: ['09:00'], isToday: true }, new Date('2026-07-06T17:00:00')); // Monday, 8h worked
+    const text = buildInfoText({ times: ['09:00'], isToday: true, weekdayIndex: 0 }, new Date('2026-07-06T17:00:00')); // Monday, 8h worked
     expect(text).not.toContain('Feierabend');
   });
 
   test('does not show a projection for a completed (non-today) day', () => {
-    const text = buildInfoText({ times: completed, isToday: false }, new Date('2026-07-06T20:00:00'));
+    const text = buildInfoText({ times: completed, isToday: false, weekdayIndex: 0 }, new Date('2026-07-06T20:00:00'));
     expect(text).not.toContain('Feierabend');
   });
 });

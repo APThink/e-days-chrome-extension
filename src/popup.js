@@ -1,9 +1,5 @@
-import { formatTime, formatClockTime } from './lib/timeUtils.js';
 import { getTodayIndex, formatDayLabel } from './lib/dateUtils.js';
-import { calcStats } from './lib/statsCalculator.js';
-import { evaluateBreakCompliance } from './lib/breakCompliance.js';
-import { getTargetMinutes } from './lib/targetTime.js';
-import { calcProjectedEnd } from './lib/projectedEnd.js';
+import { summarizeDay } from './lib/daySummary.js';
 import { ChromeService } from './services/chromeService.js';
 import { config } from './config.js';
 
@@ -57,16 +53,9 @@ class PopupController {
         this.showError('Seite nicht erkannt');
         return;
       }
-      const { times, isToday } = day;
 
-      this.updateNavigation(isToday, this.week.weekNum);
-
-      const stats = calcStats(times, isToday);
-      const compliance = evaluateBreakCompliance(times, isToday);
-      const projection = isToday
-        ? calcProjectedEnd(stats, getTargetMinutes(this.currentDayIndex, config.targetHours))
-        : null;
-      this.render(stats, compliance, projection);
+      this.updateNavigation(day.isToday, this.week.weekNum);
+      this.render(summarizeDay({ ...day, targetHours: config.targetHours }));
     } catch (error) {
       this.showError(error.message);
     }
@@ -81,7 +70,7 @@ class PopupController {
     document.getElementById('next').disabled = this.currentDayIndex >= 6;
   }
 
-  render(stats, compliance, projection) {
+  render(summary) {
     const statsEl = document.getElementById('stats');
     const statusEl = document.getElementById('status');
     const warningEl = document.getElementById('warning');
@@ -90,29 +79,21 @@ class PopupController {
 
     document.getElementById('content').classList.remove('hidden');
     statsEl.classList.remove('hidden');
-    document.getElementById('work').textContent = formatTime(stats.workMins);
-    document.getElementById('pause').textContent = formatTime(stats.pauseMins);
+    document.getElementById('work').textContent = summary.work;
+    document.getElementById('pause').textContent = summary.pause;
 
-    if (projection) {
-      projectedEndEl.textContent = formatClockTime(projection.projectedEndMins);
+    if (summary.feierabend) {
+      projectedEndEl.textContent = summary.feierabend;
       projectedEndRow.classList.remove('hidden');
     } else {
       projectedEndEl.textContent = '-';
       projectedEndRow.classList.add('hidden');
     }
 
-    if (stats.state === 'working') {
-      statusEl.textContent = `🔨 Arbeitest seit ${stats.lastTime}`;
-    } else if (stats.state === 'away') {
-      statusEl.textContent = `🚶 Weg: ${formatTime(stats.awayMins)} (seit ${stats.lastTime})`;
-    } else if (stats.state === 'done') {
-      statusEl.textContent = `🏠 Tag abgeschlossen`;
-    } else {
-      statusEl.textContent = `📭 Keine Einträge`;
-    }
+    statusEl.textContent = summary.status;
 
-    if (compliance.isBreached) {
-      warningEl.textContent = `⚠️ Noch ${formatTime(compliance.missingMins)} Pause nötig`;
+    if (summary.warning) {
+      warningEl.textContent = summary.warning;
       warningEl.classList.remove('hidden');
     } else {
       warningEl.textContent = '';
