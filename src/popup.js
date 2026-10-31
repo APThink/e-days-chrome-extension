@@ -13,7 +13,7 @@ class PopupController {
   constructor() {
     this.chromeService = new ChromeService(ALLOWED_URL);
     this.currentDayIndex = getTodayIndex();
-    this.tabId = null;
+    this.week = null;
     
     this.initEventListeners();
     this.initialize();
@@ -35,30 +35,31 @@ class PopupController {
         return;
       }
 
-      this.tabId = tab.id;
-      await this.loadDay();
+      this.week = await this.chromeService.readTimesheet(tab.id);
+      this.loadDay();
     } catch (error) {
       this.showError(error.message);
     }
   }
 
-  async navigateDay(direction) {
+  navigateDay(direction) {
     const newIndex = this.currentDayIndex + direction;
     if (newIndex < 0 || newIndex > 6) return;
     
     this.currentDayIndex = newIndex;
-    await this.loadDay();
+    this.loadDay();
   }
 
-  async loadDay() {
+  loadDay() {
     try {
-      const data = await this.chromeService.fetchDayData(this.tabId, this.currentDayIndex);
-      const { times, isCurrentWeek, weekNum } = data;
+      const day = this.week?.days.find((d) => d.weekdayIndex === this.currentDayIndex);
+      if (!day) {
+        this.showError('Seite nicht erkannt');
+        return;
+      }
+      const { times, isToday } = day;
 
-      const todayIdx = getTodayIndex();
-      const isToday = isCurrentWeek && this.currentDayIndex === todayIdx;
-
-      this.updateNavigation(isToday, weekNum);
+      this.updateNavigation(isToday, this.week.weekNum);
 
       const stats = calcStats(times, isToday);
       const compliance = evaluateBreakCompliance(times, isToday);

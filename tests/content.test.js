@@ -1,113 +1,11 @@
 // @vitest-environment jsdom
-import { extractTimes, isTodayContainer, statusText, buildInfoText, ensureInfoElement, ensureWarningElement, updateAll, init, INFO_CLASS, WARNING_CLASS } from '../src/content.js';
+import { statusText, buildInfoText, ensureInfoElement, ensureWarningElement, updateAll, init, INFO_CLASS, WARNING_CLASS } from '../src/content.js';
 
-const PAST_DATE = '2000-01-01';
-
-function buildTimeField({ value = '', readOnly = false } = {}) {
-  const field = document.createElement('div');
-  field.className = '_col-time_174qg_24';
-
-  const timeContainer = document.createElement('div');
-  timeContainer.className = '_time-container_1eu8w_51';
-
-  const [hh = '', mm = ''] = value ? value.split(':') : [];
-
-  const hourInput = document.createElement('input');
-  hourInput.type = 'text';
-  hourInput.value = hh;
-
-  const minuteInput = document.createElement('input');
-  minuteInput.type = 'number';
-  minuteInput.value = mm;
-
-  if (readOnly) {
-    hourInput.disabled = true;
-    minuteInput.disabled = true;
-  }
-
-  timeContainer.append(hourInput, document.createElement('span'), minuteInput);
-  field.appendChild(timeContainer);
-  return field;
-}
-
-function buildPeriodRow({ start = '', end = '' } = {}) {
-  const row = document.createElement('div');
-  row.className = '_period-container_174qg_15';
-  row.appendChild(buildTimeField({ value: start }));
-  row.appendChild(buildTimeField({ value: end }));
-  row.appendChild(buildTimeField({ readOnly: true }));
-  return row;
-}
-
-function buildDayContainer({ rows = [], date = PAST_DATE } = {}) {
-  const container = document.createElement('div');
-  container.id = `timesheet-day-${date}`;
-
-  const topRow = document.createElement('div');
-  topRow.className = '_top-row_1qp1z_21';
-  topRow.innerHTML = '<span class="_date_1qp1z_111">Montag - 06-07-2026</span>';
-  container.appendChild(topRow);
-
-  const periods = document.createElement('div');
-  periods.className = '_periods_dy7ys_13';
-  rows.forEach((row) => periods.appendChild(buildPeriodRow(row)));
-  container.appendChild(periods);
-
-  document.body.appendChild(container);
-  return container;
-}
+import { PAST_DATE, buildDayContainer, buildWeekLabel } from './fixtures/timesheetDom.js';
+import { READ_TIMESHEET_MESSAGE } from '../src/lib/timesheetReader.js';
 
 afterEach(() => {
   document.body.innerHTML = '';
-});
-
-describe('extractTimes', () => {
-  test('reads start/end pairs across multiple periods in order', () => {
-    const container = buildDayContainer({
-      rows: [{ start: '08:28', end: '12:20' }, { start: '12:56', end: '17:48' }],
-    });
-    expect(extractTimes(container)).toEqual(['08:28', '12:20', '12:56', '17:48']);
-  });
-
-  test('includes a trailing start with no end for an open period', () => {
-    const container = buildDayContainer({
-      rows: [{ start: '08:28', end: '12:20' }, { start: '13:00' }],
-    });
-    expect(extractTimes(container)).toEqual(['08:28', '12:20', '13:00']);
-  });
-
-  test('skips a period row where start and end are both empty', () => {
-    const container = buildDayContainer({
-      rows: [{ start: '08:00', end: '12:00' }, { start: '', end: '' }],
-    });
-    expect(extractTimes(container)).toEqual(['08:00', '12:00']);
-  });
-
-  test('returns empty array when there are no periods', () => {
-    const container = buildDayContainer({ rows: [] });
-    expect(extractTimes(container)).toEqual([]);
-  });
-
-  test('ignores the read-only total field', () => {
-    const container = buildDayContainer({ rows: [{ start: '08:00', end: '12:00' }] });
-    const totalField = container.querySelector('[class*="_col-time_"] input:disabled');
-    expect(totalField).not.toBeNull();
-    expect(extractTimes(container)).toEqual(['08:00', '12:00']);
-  });
-});
-
-describe('isTodayContainer', () => {
-  test('true when the container id matches the given date', () => {
-    const now = new Date('2026-07-06T10:00:00');
-    const container = buildDayContainer({ date: '2026-07-06' });
-    expect(isTodayContainer(container, now)).toBe(true);
-  });
-
-  test('false when the container id does not match the given date', () => {
-    const now = new Date('2026-07-06T10:00:00');
-    const container = buildDayContainer({ date: '2026-07-05' });
-    expect(isTodayContainer(container, now)).toBe(false);
-  });
 });
 
 describe('statusText', () => {
@@ -129,45 +27,35 @@ describe('statusText', () => {
 });
 
 describe('buildInfoText', () => {
+  const completed = ['08:28', '12:20', '12:56', '17:48'];
+
   test('completed (non-today) day', () => {
-    const container = buildDayContainer({
-      date: '2026-07-06',
-      rows: [{ start: '08:28', end: '12:20' }, { start: '12:56', end: '17:48' }],
-    });
-    const text = buildInfoText(container, new Date('2026-07-07T20:00:00'));
+    const text = buildInfoText({ times: completed, isToday: false }, new Date('2026-07-07T20:00:00'));
     expect(text).toBe('Arbeit: 8h 44m · Pause: 0h 36m · 🏠 Tag abgeschlossen');
   });
 
   test('today mid-shift', () => {
-    const container = buildDayContainer({ date: '2026-07-12', rows: [{ start: '09:00' }] });
-    const text = buildInfoText(container, new Date('2026-07-12T10:30:00'));
+    const text = buildInfoText({ times: ['09:00'], isToday: true }, new Date('2026-07-12T10:30:00'));
     expect(text).toBe('Arbeit: 1h 30m · Pause: 0h 0m · 🔨 Arbeitest seit 09:00');
   });
 
   test('future/empty day', () => {
-    const container = buildDayContainer({ rows: [] });
-    const text = buildInfoText(container);
+    const text = buildInfoText({ times: [], isToday: false });
     expect(text).toBe('Arbeit: 0h 0m · Pause: 0h 0m · 📭 Keine Einträge');
   });
 
   test('today mid-shift on a weekday shows the projected end time', () => {
-    const container = buildDayContainer({ date: '2026-07-06', rows: [{ start: '09:00' }] });
-    const text = buildInfoText(container, new Date('2026-07-06T10:30:00')); // Monday
+    const text = buildInfoText({ times: ['09:00'], isToday: true }, new Date('2026-07-06T10:30:00')); // Monday
     expect(text).toBe('Arbeit: 1h 30m · Pause: 0h 0m · 🔨 Arbeitest seit 09:00 · 🏁 Feierabend ca. 17:00');
   });
 
   test('does not show a projection once the target is already reached', () => {
-    const container = buildDayContainer({ date: '2026-07-06', rows: [{ start: '09:00' }] });
-    const text = buildInfoText(container, new Date('2026-07-06T17:00:00')); // Monday, 8h worked
+    const text = buildInfoText({ times: ['09:00'], isToday: true }, new Date('2026-07-06T17:00:00')); // Monday, 8h worked
     expect(text).not.toContain('Feierabend');
   });
 
   test('does not show a projection for a completed (non-today) day', () => {
-    const container = buildDayContainer({
-      date: '2026-07-05',
-      rows: [{ start: '08:28', end: '12:20' }, { start: '12:56', end: '17:48' }],
-    });
-    const text = buildInfoText(container, new Date('2026-07-06T20:00:00'));
+    const text = buildInfoText({ times: completed, isToday: false }, new Date('2026-07-06T20:00:00'));
     expect(text).not.toContain('Feierabend');
   });
 });
@@ -198,17 +86,15 @@ describe('ensureInfoElement', () => {
 
 describe('ensureInfoElement day styling', () => {
   test('applies is-today for the today container', () => {
-    const now = new Date('2026-07-06T10:00:00');
     const container = buildDayContainer({ date: '2026-07-06', rows: [{ start: '08:00' }] });
-    const el = ensureInfoElement(container, now);
+    const el = ensureInfoElement(container, true);
     expect(el.classList.contains('is-today')).toBe(true);
     expect(el.classList.contains('is-other')).toBe(false);
   });
 
   test('applies is-other for a non-today container', () => {
-    const now = new Date('2026-07-06T10:00:00');
     const container = buildDayContainer({ date: '2026-07-05', rows: [{ start: '08:00' }] });
-    const el = ensureInfoElement(container, now);
+    const el = ensureInfoElement(container, false);
     expect(el.classList.contains('is-other')).toBe(true);
     expect(el.classList.contains('is-today')).toBe(false);
   });
@@ -300,12 +186,18 @@ describe('updateAll break warning', () => {
 
 describe('init', () => {
   let observer;
+  let messageListener;
 
   beforeEach(() => {
     vi.useFakeTimers();
+    messageListener = undefined;
+    globalThis.chrome = {
+      runtime: { onMessage: { addListener: (fn) => { messageListener = fn; } } },
+    };
   });
 
   afterEach(() => {
+    delete globalThis.chrome;
     observer?.disconnect();
     observer = undefined;
     vi.clearAllTimers();
@@ -352,5 +244,33 @@ describe('init', () => {
     await vi.advanceTimersByTimeAsync(500);
 
     expect(document.querySelector(`.${INFO_CLASS}`)?.textContent).toContain('Arbeit: 4h 0m');
+  });
+
+  test('answers a read-timesheet message with the week, without DOM elements', () => {
+    buildWeekLabel('Woche 28');
+    buildDayContainer({ date: '2026-07-07', rows: [{ start: '08:00', end: '12:00' }] });
+    observer = init();
+
+    const sendResponse = vi.fn();
+    const keepOpen = messageListener({ type: READ_TIMESHEET_MESSAGE }, {}, sendResponse);
+
+    expect(keepOpen).toBeUndefined();
+    expect(sendResponse).toHaveBeenCalledTimes(1);
+    const response = sendResponse.mock.calls[0][0];
+    expect(response.weekNum).toBe(28);
+    expect(response.days).toHaveLength(1);
+    expect(response.days[0]).toEqual({
+      date: '2026-07-07',
+      weekdayIndex: 1,
+      times: ['08:00', '12:00'],
+      isToday: expect.any(Boolean),
+    });
+  });
+
+  test('ignores messages of other types', () => {
+    observer = init();
+    const sendResponse = vi.fn();
+    messageListener({ type: 'something-else' }, {}, sendResponse);
+    expect(sendResponse).not.toHaveBeenCalled();
   });
 });
