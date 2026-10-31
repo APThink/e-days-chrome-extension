@@ -1,4 +1,4 @@
-import { getTodayIndex, getMondayOfWeek, formatDayLabel, formatISODate } from '../src/lib/dateUtils.js';
+import { getWeekdayIndex, parseISODate, formatDayLabel, formatISODate } from '../src/lib/dateUtils.js';
 
 describe('dateUtils', () => {
   describe('formatISODate', () => {
@@ -11,51 +11,51 @@ describe('dateUtils', () => {
     });
   });
 
-  describe('getTodayIndex', () => {
-    test('converts Sunday to index 6', () => {
-      const sunday = new Date('2025-01-12');
-      expect(getTodayIndex(sunday)).toBe(6);
+  describe('parseISODate', () => {
+    test('reads a YYYY-MM-DD string as a local date', () => {
+      const date = parseISODate('2026-07-06');
+      expect([date.getFullYear(), date.getMonth(), date.getDate()]).toEqual([2026, 6, 6]);
     });
 
-    test('converts Monday to index 0', () => {
-      const monday = new Date('2025-01-13');
-      expect(getTodayIndex(monday)).toBe(0);
-    });
-
-    test('converts Friday to index 4', () => {
-      const friday = new Date('2025-01-17');
-      expect(getTodayIndex(friday)).toBe(4);
+    test('round-trips with formatISODate', () => {
+      expect(formatISODate(parseISODate('2027-01-04'))).toBe('2027-01-04');
     });
   });
 
-  describe('getMondayOfWeek', () => {
-    test('returns Monday', () => {
-      const monday = getMondayOfWeek(2, 2025);
-      expect(monday.getDay()).toBe(1);
+  describe('getWeekdayIndex', () => {
+    test('converts Sunday to index 6', () => {
+      expect(getWeekdayIndex(new Date('2025-01-12'))).toBe(6);
     });
 
-    test('consecutive weeks are 7 days apart', () => {
-      const week10 = getMondayOfWeek(10, 2025);
-      const week11 = getMondayOfWeek(11, 2025);
-      const diff = week11.getTime() - week10.getTime();
-      expect(diff).toBe(7 * 24 * 60 * 60 * 1000);
+    test('converts Monday to index 0', () => {
+      expect(getWeekdayIndex(new Date('2025-01-13'))).toBe(0);
+    });
+
+    test('converts Friday to index 4', () => {
+      expect(getWeekdayIndex(new Date('2025-01-17'))).toBe(4);
+    });
+
+    test('defaults to today', () => {
+      expect(getWeekdayIndex()).toBe(getWeekdayIndex(new Date()));
     });
   });
 
   describe('formatDayLabel', () => {
-    test('formats day with date', () => {
-      const label = formatDayLabel(0, 2, false);
-      expect(label).toMatch(/^Mo \d{1,2}\.\d{1,2}$/);
+    test('shows the weekday and the day and month of the date', () => {
+      expect(formatDayLabel({ date: '2026-07-07', weekdayIndex: 1, isToday: false })).toBe('Di 7.7');
+    });
+
+    test('does not pad day or month', () => {
+      expect(formatDayLabel({ date: '2026-01-05', weekdayIndex: 0, isToday: false })).toBe('Mo 5.1');
+      expect(formatDayLabel({ date: '2026-12-31', weekdayIndex: 3, isToday: false })).toBe('Do 31.12');
     });
 
     test('adds (Heute) when isToday is true', () => {
-      const label = formatDayLabel(0, 2, true);
-      expect(label).toContain('(Heute)');
+      expect(formatDayLabel({ date: '2026-07-07', weekdayIndex: 1, isToday: true })).toBe('Di 7.7 (Heute)');
     });
 
-    test('does not add (Heute) when isToday is false', () => {
-      const label = formatDayLabel(0, 2, false);
-      expect(label).not.toContain('(Heute)');
+    test('is right in years where the week number would mislead (2027 starts on a Friday)', () => {
+      expect(formatDayLabel({ date: '2027-01-04', weekdayIndex: 0, isToday: false })).toBe('Mo 4.1');
     });
   });
 });

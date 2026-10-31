@@ -8,9 +8,8 @@ const REFRESH_MS = 60000;
 function answerTimesheetRequests() {
   const listener = (message, _sender, sendResponse) => {
     if (message?.type !== READ_TIMESHEET_MESSAGE) return;
-    const { weekNum, days } = readTimesheet();
+    const { days } = readTimesheet();
     sendResponse({
-      weekNum,
       days: days.map(({ element, ...day }) => day),
     });
   };

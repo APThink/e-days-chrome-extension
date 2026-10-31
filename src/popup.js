@@ -1,4 +1,4 @@
-import { getTodayIndex, formatDayLabel } from './lib/dateUtils.js';
+import { getWeekdayIndex, formatDayLabel } from './lib/dateUtils.js';
 import { summarizeDay } from './lib/daySummary.js';
 import { ChromeService } from './services/chromeService.js';
 import { config } from './config.js';
@@ -8,7 +8,7 @@ const ALLOWED_URL = config.allowedUrl;
 class PopupController {
   constructor() {
     this.chromeService = new ChromeService(ALLOWED_URL);
-    this.currentDayIndex = getTodayIndex();
+    this.currentDayIndex = getWeekdayIndex();
     this.week = null;
     
     this.initEventListeners();
@@ -54,18 +54,18 @@ class PopupController {
         return;
       }
 
-      this.updateNavigation(day.isToday, this.week.weekNum);
+      this.updateNavigation(day);
       this.render(summarizeDay({ ...day, targetHours: config.targetHours }));
     } catch (error) {
       this.showError(error.message);
     }
   }
 
-  updateNavigation(isToday, weekNum) {
-    const label = formatDayLabel(this.currentDayIndex, weekNum, isToday);
+  updateNavigation(day) {
+    const label = formatDayLabel(day);
     const dayEl = document.getElementById('day');
     dayEl.textContent = label;
-    dayEl.classList.toggle('day-other', !isToday);
+    dayEl.classList.toggle('day-other', !day.isToday);
     document.getElementById('prev').disabled = this.currentDayIndex <= 0;
     document.getElementById('next').disabled = this.currentDayIndex >= 6;
   }

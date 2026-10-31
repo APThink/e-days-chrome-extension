@@ -2,7 +2,7 @@
 import { init } from '../src/content.js';
 import { INFO_CLASS } from '../src/lib/pageDecorator.js';
 import { READ_TIMESHEET_MESSAGE } from '../src/lib/timesheetReader.js';
-import { buildDayContainer, buildWeekLabel } from './fixtures/timesheetDom.js';
+import { buildDayContainer } from './fixtures/timesheetDom.js';
 
 const infoText = () => document.querySelector(`.${INFO_CLASS}`)?.textContent;
 
@@ -78,8 +78,7 @@ describe('init', () => {
     expect(infoText()).toContain('Arbeit: 4h 0m');
   });
 
-  test('answers a read-timesheet message with the week, without DOM elements', () => {
-    buildWeekLabel('Woche 28');
+  test('answers a read-timesheet message with the days, without DOM elements', () => {
     buildDayContainer({ date: '2026-07-07', rows: [{ start: '08:00', end: '12:00' }] });
     stop = init();
 
@@ -89,7 +88,7 @@ describe('init', () => {
     expect(keepOpen).toBeUndefined();
     expect(sendResponse).toHaveBeenCalledTimes(1);
     const response = sendResponse.mock.calls[0][0];
-    expect(response.weekNum).toBe(28);
+    expect(Object.keys(response)).toEqual(['days']);
     expect(response.days).toHaveLength(1);
     expect(response.days[0]).toEqual({
       date: '2026-07-07',
