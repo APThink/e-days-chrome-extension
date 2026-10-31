@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { decorateTimesheet, INFO_CLASS, WARNING_CLASS } from '../src/lib/pageDecorator.js';
+import { locateInfoRowAnchor } from '../src/lib/timesheetReader.js';
 import { PAST_DATE, buildDayContainer } from './fixtures/timesheetDom.js';
 
 afterEach(() => {
@@ -10,13 +11,13 @@ afterEach(() => {
 describe('decorateTimesheet', () => {
   describe('info row', () => {
     test('is added to every day, right after its header', () => {
-      const first = buildDayContainer({ rows: [{ start: '08:00', end: '12:00' }], date: '2000-01-01' });
-      const second = buildDayContainer({ rows: [], date: '2000-01-02' });
+      buildDayContainer({ rows: [{ start: '08:00', end: '12:00' }], date: '2000-01-01' });
+      buildDayContainer({ rows: [], date: '2000-01-02' });
 
       decorateTimesheet();
 
-      for (const container of [first, second]) {
-        const header = container.querySelector('[class*="_top-row_"]');
+      for (const date of ['2000-01-01', '2000-01-02']) {
+        const header = locateInfoRowAnchor(date);
         expect(header.nextElementSibling.classList.contains(INFO_CLASS)).toBe(true);
       }
       const infos = document.querySelectorAll(`.${INFO_CLASS}`);
