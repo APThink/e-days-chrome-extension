@@ -5,6 +5,11 @@ export function getTodayIndex(now = new Date()) {
   return d === 0 ? 6 : d - 1;
 }
 
+export function formatISODate(date) {
+  const pad2 = (n) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
+}
+
 export function getMondayOfWeek(weekNum, year = new Date().getFullYear()) {
   const simple = new Date(year, 0, 1 + (weekNum - 1) * 7);
   const dayOfWeek = simple.getDay();
