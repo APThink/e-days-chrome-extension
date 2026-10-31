@@ -11,3 +11,13 @@ Domain terms for the e-days Tracker. Use these in code, tests and reviews.
 **Time entry**: a single start or end value (`HH:MM`) of a Period. A Day's times are its Time entries in order: start, end, start, end, …
 
 **Timesheet reader**: the module that turns the Timesheet DOM into data (`weekNum`, Days with Time entries and `isToday`). The only module that knows the e-days page layout.
+
+**Day summary**: what both views (injected page row, popup) show for a Day: Work, Pause, status, optional break warning, optional Feierabend. Produced by `summarizeDay`, as display-ready strings.
+
+**Work**: time between a Period's start and end (an open Period counts up to now, today only).
+
+**Pause**: total time between one Period's end and the next Period's start.
+
+**Qualifying break**: a gap of at least 15 minutes. Only these count towards the legal break requirement (30 min above 6h, 45 min above 9h of Work).
+
+**Feierabend**: the projected end of today's workday: now plus the remaining Work to reach that weekday's target hours.

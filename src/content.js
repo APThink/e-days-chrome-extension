@@ -1,38 +1,27 @@
-import { formatTime, formatClockTime } from './lib/timeUtils.js';
-import { calcStats } from './lib/statsCalculator.js';
-import { evaluateBreakCompliance } from './lib/breakCompliance.js';
-import { getTargetMinutes } from './lib/targetTime.js';
-import { calcProjectedEnd } from './lib/projectedEnd.js';
-import { getTodayIndex } from './lib/dateUtils.js';
+import { summarizeDay } from './lib/daySummary.js';
 import { readTimesheet, READ_TIMESHEET_MESSAGE } from './lib/timesheetReader.js';
 import { config } from './config.js';
 
-export function statusText(stats) {
-  switch (stats.state) {
-    case 'working':
-      return `🔨 Arbeitest seit ${stats.lastTime}`;
-    case 'away':
-      return `🚶 Weg: ${formatTime(stats.awayMins)} (seit ${stats.lastTime})`;
-    case 'done':
-      return '🏠 Tag abgeschlossen';
-    default:
-      return '📭 Keine Einträge';
-  }
+function summarize(day, now) {
+  return summarizeDay({
+    times: day.times,
+    isToday: day.isToday,
+    weekdayIndex: day.weekdayIndex,
+    targetHours: config.targetHours,
+    now,
+  });
 }
 
-export function buildInfoText({ times, isToday }, now = new Date()) {
-  const stats = calcStats(times, isToday, now);
-  let text = `Arbeit: ${formatTime(stats.workMins)} · Pause: ${formatTime(stats.pauseMins)} · ${statusText(stats)}`;
-
-  if (isToday) {
-    const targetMins = getTargetMinutes(getTodayIndex(now), config.targetHours);
-    const projection = calcProjectedEnd(stats, targetMins, now);
-    if (projection) {
-      text += ` · 🏁 Feierabend ca. ${formatClockTime(projection.projectedEndMins)}`;
-    }
+function infoLine(summary) {
+  let text = `Arbeit: ${summary.work} · Pause: ${summary.pause} · ${summary.status}`;
+  if (summary.feierabend) {
+    text += ` · 🏁 Feierabend ca. ${summary.feierabend}`;
   }
-
   return text;
+}
+
+export function buildInfoText(day, now = new Date()) {
+  return infoLine(summarize(day, now));
 }
 
 export const INFO_CLASS = 'edays-tracker-day-info';
@@ -103,21 +92,19 @@ export function updateAll(root = document, now = new Date()) {
   readTimesheet(root, now).days.forEach((day) => {
     const el = ensureInfoElement(day.element, day.isToday);
     if (!el) return;
-    const text = buildInfoText(day, now);
+    const summary = summarize(day, now);
+    const text = infoLine(summary);
     if (el.textContent !== text) {
       el.textContent = text;
     }
 
     const warningEl = ensureWarningElement(day.element);
     if (!warningEl) return;
-    const compliance = evaluateBreakCompliance(day.times, day.isToday, now);
-    const warningText = compliance.isBreached
-      ? `⚠️ Noch ${formatTime(compliance.missingMins)} Pause nötig`
-      : '';
+    const warningText = summary.warning ?? '';
     if (warningEl.textContent !== warningText) {
       warningEl.textContent = warningText;
     }
-    warningEl.style.display = compliance.isBreached ? '' : 'none';
+    warningEl.style.display = summary.warning ? '' : 'none';
   });
 }
 
