@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import { init } from '../src/content.js';
 import { INFO_CLASS } from '../src/lib/pageDecorator.js';
-import { READ_TIMESHEET_MESSAGE } from '../src/lib/timesheetReader.js';
+import { requestTimesheet } from '../src/lib/timesheetLink.js';
+import { fakeChrome } from './fixtures/fakeChrome.js';
 import { buildDayContainer } from './fixtures/timesheetDom.js';
 
 const infoText = () => document.querySelector(`.${INFO_CLASS}`)?.textContent;
@@ -14,21 +15,12 @@ function setEndTime(container, hh, mm) {
 
 describe('init', () => {
   let stop;
-  let messageListener;
-  let removedListener;
+  let chrome;
 
   beforeEach(() => {
     vi.useFakeTimers();
-    messageListener = undefined;
-    removedListener = undefined;
-    globalThis.chrome = {
-      runtime: {
-        onMessage: {
-          addListener: (fn) => { messageListener = fn; },
-          removeListener: (fn) => { removedListener = fn; },
-        },
-      },
-    };
+    chrome = fakeChrome();
+    globalThis.chrome = chrome;
   });
 
   afterEach(() => {
@@ -78,31 +70,15 @@ describe('init', () => {
     expect(infoText()).toContain('Arbeit: 4h 0m');
   });
 
-  test('answers a read-timesheet message with the days, without DOM elements', () => {
+  test('answers popup requests with the days, without DOM elements', async () => {
     buildDayContainer({ date: '2026-07-07', rows: [{ start: '08:00', end: '12:00' }] });
     stop = init();
 
-    const sendResponse = vi.fn();
-    const keepOpen = messageListener({ type: READ_TIMESHEET_MESSAGE }, {}, sendResponse);
+    const { days } = await requestTimesheet(chrome, 42);
 
-    expect(keepOpen).toBeUndefined();
-    expect(sendResponse).toHaveBeenCalledTimes(1);
-    const response = sendResponse.mock.calls[0][0];
-    expect(Object.keys(response)).toEqual(['days']);
-    expect(response.days).toHaveLength(1);
-    expect(response.days[0]).toEqual({
-      date: '2026-07-07',
-      weekdayIndex: 1,
-      times: ['08:00', '12:00'],
-      isToday: expect.any(Boolean),
-    });
-  });
-
-  test('ignores messages of other types', () => {
-    stop = init();
-    const sendResponse = vi.fn();
-    messageListener({ type: 'something-else' }, {}, sendResponse);
-    expect(sendResponse).not.toHaveBeenCalled();
+    expect(days).toEqual([
+      { date: '2026-07-07', weekdayIndex: 1, times: ['08:00', '12:00'], isToday: expect.any(Boolean) },
+    ]);
   });
 
   describe('stop', () => {
@@ -129,11 +105,11 @@ describe('init', () => {
 
     test('stops answering popup requests', () => {
       stop = init();
-      const registered = messageListener;
+      expect(chrome.listenerCount()).toBe(1);
 
       stop();
 
-      expect(removedListener).toBe(registered);
+      expect(chrome.listenerCount()).toBe(0);
     });
   });
 });
