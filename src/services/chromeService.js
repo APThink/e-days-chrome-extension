@@ -1,4 +1,4 @@
-import { READ_TIMESHEET_MESSAGE } from '../lib/timesheetReader.js';
+import { requestTimesheet } from '../lib/timesheetLink.js';
 
 export class ChromeService {
   constructor(allowedUrl) {
@@ -13,16 +13,8 @@ export class ChromeService {
     });
   }
 
-  async readTimesheet(tabId) {
-    return new Promise((resolve, reject) => {
-      chrome.tabs.sendMessage(tabId, { type: READ_TIMESHEET_MESSAGE }, (response) => {
-        if (chrome.runtime.lastError || !response) {
-          reject(new Error('Seite neu laden'));
-          return;
-        }
-        resolve(response);
-      });
-    });
+  readTimesheet(tabId) {
+    return requestTimesheet(chrome, tabId);
   }
 
   openPage() {

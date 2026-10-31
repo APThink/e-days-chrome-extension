@@ -33,3 +33,5 @@ Domain terms for the e-days Tracker. Use these in code, tests and reviews.
 **Popup**: the toolbar popup module (`createPopup`). Owns the selected weekday and the loaded Timesheet, and decides what the popup shows: a Day summary with navigation limits, or an error (wrong page, reload hint, Day not found). Returns plain view models; knows nothing about the DOM or `chrome`.
 
 **Browser port**: what the Popup needs from the browser: `currentTab()`, `readTimesheet(tabId)`, `openPage()`. `ChromeService` is the Chrome adapter; tests use an in-memory one (`tests/fixtures/fakeBrowser.js`).
+
+**Timesheet link**: the module (`serveTimesheet`, `requestTimesheet`) that owns both ends of the content script ↔ popup exchange: the message, the `{ days }` response and the reload hint when no page answers. Takes `runtime`/`tabs` and the reader as parameters; knows nothing about the page layout.

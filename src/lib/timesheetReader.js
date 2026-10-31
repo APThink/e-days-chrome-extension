@@ -1,7 +1,5 @@
 import { getWeekdayIndex, formatISODate, parseISODate } from './dateUtils.js';
 
-export const READ_TIMESHEET_MESSAGE = 'edays:readTimesheet';
-
 const DAY_ID_PREFIX = 'timesheet-day-';
 const DAY_CONTAINER_SELECTOR = `[id^="${DAY_ID_PREFIX}"]`;
 

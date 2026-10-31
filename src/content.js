@@ -1,22 +1,13 @@
 import { decorateTimesheet } from './lib/pageDecorator.js';
-import { readTimesheet, READ_TIMESHEET_MESSAGE } from './lib/timesheetReader.js';
+import { readTimesheet } from './lib/timesheetReader.js';
+import { serveTimesheet } from './lib/timesheetLink.js';
 
 const FALLBACK_POLL_MS = 500;
 const FALLBACK_WINDOW_MS = 10000;
 const REFRESH_MS = 60000;
 
-function answerTimesheetRequests() {
-  const listener = (message, _sender, sendResponse) => {
-    if (message?.type !== READ_TIMESHEET_MESSAGE) return;
-    const { days } = readTimesheet();
-    sendResponse({ days });
-  };
-  chrome.runtime.onMessage.addListener(listener);
-  return () => chrome.runtime.onMessage.removeListener(listener);
-}
-
 export function init() {
-  const stopAnswering = answerTimesheetRequests();
+  const stopAnswering = serveTimesheet({ runtime: chrome.runtime, read: readTimesheet });
   decorateTimesheet();
 
   const observeTarget = document.getElementById('time-recording-content-wrapper') || document.body;
