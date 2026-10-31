@@ -1,6 +1,16 @@
-import { getTodayIndex, getMondayOfWeek, formatDayLabel } from '../src/lib/dateUtils.js';
+import { getTodayIndex, getMondayOfWeek, formatDayLabel, formatISODate } from '../src/lib/dateUtils.js';
 
 describe('dateUtils', () => {
+  describe('formatISODate', () => {
+    test('formats a date as YYYY-MM-DD using local components', () => {
+      expect(formatISODate(new Date(2026, 6, 6))).toBe('2026-07-06');
+    });
+
+    test('zero-pads single digit month and day', () => {
+      expect(formatISODate(new Date(2026, 0, 5))).toBe('2026-01-05');
+    });
+  });
+
   describe('getTodayIndex', () => {
     test('converts Sunday to index 6', () => {
       const sunday = new Date('2025-01-12');

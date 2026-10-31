@@ -1,16 +1,35 @@
 function extractDayData(dayIndex) {
-  const container = document.querySelectorAll('.tt_day_container')[dayIndex];
+  const containers = [...document.querySelectorAll('[id^="timesheet-day-"]')];
+  const container = containers[dayIndex];
   if (!container) return null;
 
-  const inputs = [...container.querySelectorAll('input[type="time"]')];
-  const times = inputs.map(i => i.value).filter(v => v);
+  const readTimeField = (fieldEl) => {
+    const inputs = fieldEl.querySelectorAll('input');
+    const hh = inputs[0]?.value.trim();
+    const mm = inputs[1]?.value.trim();
+    if (!hh || !mm) return null;
+    return `${hh.padStart(2, '0')}:${mm.padStart(2, '0')}`;
+  };
 
-  const weekLinks = [...document.querySelectorAll('#weekSummary a')];
-  const lastWeekEl = weekLinks[weekLinks.length - 1];
-  const isCurrentWeek = lastWeekEl?.classList.contains('selectedWeek');
+  const times = [];
+  container.querySelectorAll('[class*="_period-container_"]').forEach((period) => {
+    const fields = [...period.querySelectorAll('[class*="_col-time_"]')].filter(
+      (field) => !field.querySelector('input:disabled')
+    );
+    const start = fields[0] && readTimeField(fields[0]);
+    const end = fields[1] && readTimeField(fields[1]);
+    if (start) times.push(start);
+    if (end) times.push(end);
+  });
 
-  const selectedWeekEl = document.querySelector('.selectedWeek .summary_week_no');
-  const weekNum = selectedWeekEl ? parseInt(selectedWeekEl.textContent) : null;
+  const pad2 = (n) => String(n).padStart(2, '0');
+  const now = new Date();
+  const todayId = `timesheet-day-${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`;
+  const isCurrentWeek = containers.some((c) => c.id === todayId);
+
+  const headerLabel = document.querySelector('[class*="_header-label_"]');
+  const weekMatch = headerLabel?.textContent.match(/Woche\s+(\d+)/);
+  const weekNum = weekMatch ? parseInt(weekMatch[1], 10) : null;
 
   return { times, isCurrentWeek, weekNum };
 }
