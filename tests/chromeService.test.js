@@ -19,7 +19,7 @@ describe('ChromeService.readTimesheet', () => {
   const service = new ChromeService('https://example.e-days.com/TimeSubmission');
 
   test('asks the tab\'s content script and resolves with its answer', async () => {
-    const week = { weekNum: 28, days: [{ date: '2026-07-07', weekdayIndex: 1, times: [], isToday: false }] };
+    const week = { days: [{ date: '2026-07-07', weekdayIndex: 1, times: [], isToday: false }] };
     const sendMessage = fakeChrome({ response: week });
 
     await expect(service.readTimesheet(42)).resolves.toEqual(week);

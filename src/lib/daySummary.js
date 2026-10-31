@@ -1,8 +1,25 @@
 import { DAYS } from './dateUtils.js';
-import { toMinutes, formatTime, formatClockTime } from './timeUtils.js';
 
 const QUALIFYING_BREAK_MINS = 15;
 const DEFAULT_TARGET_HOURS = { Mo: 8, Di: 8, Mi: 8, Do: 8, Fr: 8, Sa: 0, So: 0 };
+
+function toMinutes(timeStr) {
+  const [h, m] = timeStr.split(':').map(Number);
+  return h * 60 + m;
+}
+
+function formatTime(mins) {
+  const h = Math.floor(Math.abs(mins) / 60);
+  const m = Math.abs(mins) % 60;
+  return `${h}h ${m}m`;
+}
+
+function formatClockTime(mins) {
+  const normalized = ((mins % 1440) + 1440) % 1440;
+  const h = Math.floor(normalized / 60);
+  const m = normalized % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
 
 function minutesOfDay(date) {
   return date.getHours() * 60 + date.getMinutes();

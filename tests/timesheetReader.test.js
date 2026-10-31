@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { readTimesheet } from '../src/lib/timesheetReader.js';
-import { buildDayContainer, buildWeekLabel } from './fixtures/timesheetDom.js';
+import { buildDayContainer } from './fixtures/timesheetDom.js';
 
 afterEach(() => {
   document.body.innerHTML = '';
@@ -45,7 +45,7 @@ describe('readTimesheet', () => {
   });
 
   test('returns no days when the page has no day containers', () => {
-    expect(readTimesheet()).toEqual({ weekNum: null, days: [] });
+    expect(readTimesheet()).toEqual({ days: [] });
   });
 
   test('exposes each day\'s container element for in-page callers', () => {
@@ -60,16 +60,5 @@ describe('readTimesheet', () => {
     const { days } = readTimesheet(document, new Date('2026-07-07T10:00:00'));
 
     expect(days.map((d) => d.isToday)).toEqual([false, true]);
-  });
-
-  test('reads the week number from the "Woche N" header label', () => {
-    buildWeekLabel('Woche 28 · 06.07. – 12.07.2026');
-    expect(readTimesheet().weekNum).toBe(28);
-  });
-
-  test('week number is null when the header label is missing or has no week', () => {
-    expect(readTimesheet().weekNum).toBeNull();
-    buildWeekLabel('Zeiterfassung');
-    expect(readTimesheet().weekNum).toBeNull();
   });
 });

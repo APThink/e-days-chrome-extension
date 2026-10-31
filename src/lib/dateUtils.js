@@ -1,7 +1,7 @@
 export const DAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
 
-export function getTodayIndex(now = new Date()) {
-  const d = now.getDay();
+export function getWeekdayIndex(date = new Date()) {
+  const d = date.getDay();
   return d === 0 ? 6 : d - 1;
 }
 
@@ -10,25 +10,13 @@ export function formatISODate(date) {
   return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
 }
 
-export function getMondayOfWeek(weekNum, year = new Date().getFullYear()) {
-  const simple = new Date(year, 0, 1 + (weekNum - 1) * 7);
-  const dayOfWeek = simple.getDay();
-  const monday = new Date(simple);
-  monday.setDate(simple.getDate() - dayOfWeek + 1);
-  return monday;
+export function parseISODate(isoDate) {
+  const [y, m, d] = isoDate.split('-').map(Number);
+  return new Date(y, m - 1, d);
 }
 
-export function formatDayLabel(dayIndex, weekNum, isToday) {
-  const monday = getMondayOfWeek(weekNum);
-  const date = new Date(monday);
-  date.setDate(monday.getDate() + dayIndex);
-
-  const dateStr = `${date.getDate()}.${date.getMonth() + 1}`;
-  let label = `${DAYS[dayIndex]} ${dateStr}`;
-
-  if (isToday) {
-    label += ' (Heute)';
-  }
-
-  return label;
+export function formatDayLabel({ date, weekdayIndex, isToday }) {
+  const [, month, day] = date.split('-').map(Number);
+  const label = `${DAYS[weekdayIndex]} ${day}.${month}`;
+  return isToday ? `${label} (Heute)` : label;
 }

@@ -40,6 +40,12 @@ describe('summarizeDay', () => {
       expect(s.pause).toBe('1h 0m');
     });
 
+    test('durations read as hours and minutes, not zero-padded', () => {
+      const s = summarize(['09:00', '11:15', '11:20', '11:25']);
+      expect(s.work).toBe('2h 20m');
+      expect(s.pause).toBe('0h 5m');
+    });
+
     test('pause adds up every gap between periods', () => {
       const s = summarize(['08:00', '10:00', '10:30', '12:00', '13:00', '15:00']);
       expect(s.work).toBe('5h 30m');
@@ -171,6 +177,14 @@ describe('summarizeDay', () => {
 
     test('adds no time for mandatory breaks that have not been taken yet', () => {
       expect(MONDAY_AT('14:50', ['09:00']).feierabend).toBe('17:00'); // 5h50m worked, 2h10m to go
+    });
+
+    test('is a zero-padded clock time', () => {
+      expect(MONDAY_AT('00:35', ['00:05']).feierabend).toBe('08:05'); // 30min worked, 7h30m to go
+    });
+
+    test('wraps past midnight', () => {
+      expect(MONDAY_AT('23:30', ['23:00']).feierabend).toBe('07:00'); // 30min worked, 7h30m to go
     });
 
     describe('target hours', () => {

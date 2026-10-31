@@ -53,11 +53,3 @@ export function buildDayContainer({ rows = [], date = PAST_DATE } = {}) {
   document.body.appendChild(container);
   return container;
 }
-
-export function buildWeekLabel(text) {
-  const label = document.createElement('div');
-  label.className = '_header-label_9xk2p_3';
-  label.textContent = text;
-  document.body.appendChild(label);
-  return label;
-}

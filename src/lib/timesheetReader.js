@@ -1,4 +1,4 @@
-import { getTodayIndex, formatISODate } from './dateUtils.js';
+import { getWeekdayIndex, formatISODate, parseISODate } from './dateUtils.js';
 
 export const READ_TIMESHEET_MESSAGE = 'edays:readTimesheet';
 
@@ -27,17 +27,6 @@ function readTimes(container) {
   return times;
 }
 
-function parseDate(isoDate) {
-  const [y, m, d] = isoDate.split('-').map(Number);
-  return new Date(y, m - 1, d);
-}
-
-function readWeekNum(root) {
-  const label = root.querySelector('[class*="_header-label_"]');
-  const match = label?.textContent.match(/Woche\s+(\d+)/);
-  return match ? parseInt(match[1], 10) : null;
-}
-
 export function readTimesheet(root = document, now = new Date()) {
   const todayDate = formatISODate(now);
   const days = [...root.querySelectorAll(DAY_CONTAINER_SELECTOR)].map((element) => {
@@ -45,10 +34,10 @@ export function readTimesheet(root = document, now = new Date()) {
     return {
       date,
       isToday: date === todayDate,
-      weekdayIndex: getTodayIndex(parseDate(date)),
+      weekdayIndex: getWeekdayIndex(parseISODate(date)),
       times: readTimes(element),
       element,
     };
   });
-  return { weekNum: readWeekNum(root), days };
+  return { days };
 }
