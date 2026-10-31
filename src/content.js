@@ -9,9 +9,7 @@ function answerTimesheetRequests() {
   const listener = (message, _sender, sendResponse) => {
     if (message?.type !== READ_TIMESHEET_MESSAGE) return;
     const { days } = readTimesheet();
-    sendResponse({
-      days: days.map(({ element, ...day }) => day),
-    });
+    sendResponse({ days });
   };
   chrome.runtime.onMessage.addListener(listener);
   return () => chrome.runtime.onMessage.removeListener(listener);

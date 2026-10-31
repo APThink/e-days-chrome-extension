@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { readTimesheet } from '../src/lib/timesheetReader.js';
+import { readTimesheet, locateInfoRowAnchor } from '../src/lib/timesheetReader.js';
 import { buildDayContainer } from './fixtures/timesheetDom.js';
 
 afterEach(() => {
@@ -48,9 +48,10 @@ describe('readTimesheet', () => {
     expect(readTimesheet()).toEqual({ days: [] });
   });
 
-  test('exposes each day\'s container element for in-page callers', () => {
-    const container = buildDayContainer({ date: '2026-07-07' });
-    expect(readTimesheet().days[0].element).toBe(container);
+  test('returns days as plain data without DOM references', () => {
+    buildDayContainer({ date: '2026-07-07', rows: [{ start: '08:00', end: '12:00' }] });
+    const [day] = readTimesheet().days;
+    expect(Object.keys(day).sort()).toEqual(['date', 'isToday', 'times', 'weekdayIndex']);
   });
 
   test('marks only the day matching the injected now as today', () => {
@@ -60,5 +61,29 @@ describe('readTimesheet', () => {
     const { days } = readTimesheet(document, new Date('2026-07-07T10:00:00'));
 
     expect(days.map((d) => d.isToday)).toEqual([false, true]);
+  });
+});
+
+describe('locateInfoRowAnchor', () => {
+  test('returns the header of the day with the given date', () => {
+    buildDayContainer({ date: '2026-07-06' });
+    const container = buildDayContainer({ date: '2026-07-07' });
+
+    const anchor = locateInfoRowAnchor('2026-07-07');
+
+    expect(anchor).toBe(container.querySelector('[class*="_top-row_"]'));
+  });
+
+  test('returns null for a date that is not on the page', () => {
+    buildDayContainer({ date: '2026-07-06' });
+    expect(locateInfoRowAnchor('2026-07-07')).toBeNull();
+  });
+
+  test('returns null for a day that has no header', () => {
+    const container = document.createElement('div');
+    container.id = 'timesheet-day-2026-07-07';
+    document.body.appendChild(container);
+
+    expect(locateInfoRowAnchor('2026-07-07')).toBeNull();
   });
 });

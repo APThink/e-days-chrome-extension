@@ -1,5 +1,5 @@
 import { summarizeDay } from './daySummary.js';
-import { readTimesheet } from './timesheetReader.js';
+import { readTimesheet, locateInfoRowAnchor } from './timesheetReader.js';
 import { config } from '../config.js';
 
 export const INFO_CLASS = 'edays-tracker-day-info';
@@ -52,17 +52,15 @@ function injectStyles() {
   document.head.appendChild(style);
 }
 
-function ensureInfoElement(container, isToday) {
-  const header = container.querySelector('[class*="_top-row_"]');
-  if (!header) return null;
-
+function ensureInfoElement(anchor, isToday) {
   injectStyles();
 
-  let el = container.querySelector(`.${INFO_CLASS}`);
+  const scope = anchor.parentElement;
+  let el = scope.querySelector(`.${INFO_CLASS}`);
   if (!el) {
     el = document.createElement('div');
     el.className = INFO_CLASS;
-    header.insertAdjacentElement('afterend', el);
+    anchor.insertAdjacentElement('afterend', el);
   }
 
   el.classList.toggle('is-today', isToday);
@@ -71,8 +69,8 @@ function ensureInfoElement(container, isToday) {
   return el;
 }
 
-function ensureWarningElement(container, infoEl) {
-  let el = container.querySelector(`.${WARNING_CLASS}`);
+function ensureWarningElement(infoEl) {
+  let el = infoEl.parentElement.querySelector(`.${WARNING_CLASS}`);
   if (!el) {
     el = document.createElement('div');
     el.className = WARNING_CLASS;
@@ -83,15 +81,16 @@ function ensureWarningElement(container, infoEl) {
 
 export function decorateTimesheet(root = document, now = new Date()) {
   readTimesheet(root, now).days.forEach((day) => {
-    const el = ensureInfoElement(day.element, day.isToday);
-    if (!el) return;
+    const anchor = locateInfoRowAnchor(day.date, root);
+    if (!anchor) return;
+    const el = ensureInfoElement(anchor, day.isToday);
     const summary = summarize(day, now);
     const text = infoLine(summary);
     if (el.textContent !== text) {
       el.textContent = text;
     }
 
-    const warningEl = ensureWarningElement(day.element, el);
+    const warningEl = ensureWarningElement(el);
     const warningText = summary.warning ?? '';
     if (warningEl.textContent !== warningText) {
       warningEl.textContent = warningText;

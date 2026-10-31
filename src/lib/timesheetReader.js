@@ -27,16 +27,20 @@ function readTimes(container) {
   return times;
 }
 
+export function locateInfoRowAnchor(date, root = document) {
+  const container = root.querySelector(`[id="${DAY_ID_PREFIX}${date}"]`);
+  return container?.querySelector('[class*="_top-row_"]') ?? null;
+}
+
 export function readTimesheet(root = document, now = new Date()) {
   const todayDate = formatISODate(now);
-  const days = [...root.querySelectorAll(DAY_CONTAINER_SELECTOR)].map((element) => {
-    const date = element.id.slice(DAY_ID_PREFIX.length);
+  const days = [...root.querySelectorAll(DAY_CONTAINER_SELECTOR)].map((container) => {
+    const date = container.id.slice(DAY_ID_PREFIX.length);
     return {
       date,
       isToday: date === todayDate,
       weekdayIndex: getWeekdayIndex(parseISODate(date)),
-      times: readTimes(element),
-      element,
+      times: readTimes(container),
     };
   });
   return { days };

@@ -10,7 +10,9 @@ Domain terms for the e-days Tracker. Use these in code, tests and reviews.
 
 **Time entry**: a single start or end value (`HH:MM`) of a Period. A Day's times are its Time entries in order: start, end, start, end, …
 
-**Timesheet reader**: the module that turns the Timesheet DOM into data (Days with date, weekday, Time entries and `isToday`). The only module that knows the e-days page layout.
+**Timesheet reader**: the module that turns the Timesheet DOM into plain data (Days with date, weekday, Time entries and `isToday`, no DOM references) and locates the Info row anchor. The only module that knows the e-days page layout.
+
+**Info row anchor**: the element of a Day after which its Info row is mounted (the Day's header). Located by the Timesheet reader; a Day without one is skipped.
 
 **Day summary**: what both views (injected page row, popup) show for a Day: Work, Pause, status, optional break warning, optional Feierabend. Produced by `summarizeDay`, as display-ready strings.
 
