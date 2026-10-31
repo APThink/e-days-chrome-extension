@@ -29,3 +29,7 @@ Domain terms for the e-days Tracker. Use these in code, tests and reviews.
 **Warning row**: the blinking break warning injected directly under the Info row. Hidden when there is nothing to warn about.
 
 **Page decorator**: the module that keeps the Info row and Warning row of every Day in sync with the Timesheet (`decorateTimesheet`).
+
+**Popup**: the toolbar popup module (`createPopup`). Owns the selected weekday and the loaded Timesheet, and decides what the popup shows: a Day summary with navigation limits, or an error (wrong page, reload hint, Day not found). Returns plain view models; knows nothing about the DOM or `chrome`.
+
+**Browser port**: what the Popup needs from the browser: `currentTab()`, `readTimesheet(tabId)`, `openPage()`. `ChromeService` is the Chrome adapter; tests use an in-memory one (`tests/fixtures/fakeBrowser.js`).

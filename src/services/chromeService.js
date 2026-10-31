@@ -5,16 +5,12 @@ export class ChromeService {
     this.allowedUrl = allowedUrl;
   }
 
-  async getCurrentTab() {
+  async currentTab() {
     return new Promise((resolve) => {
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         resolve(tabs[0]);
       });
     });
-  }
-
-  isValidUrl(url) {
-    return url && url.startsWith(this.allowedUrl);
   }
 
   async readTimesheet(tabId) {
