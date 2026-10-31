@@ -43,7 +43,7 @@ describe('Popup', () => {
   });
 
   test('stops navigating at the ends of the week', async () => {
-    const { popup } = popupFor({ week: { days: [{ date: '2026-07-06', weekdayIndex: 0, isToday: false, times: [] }] } });
+    const { popup } = popupFor({ week: { days: [{ date: '2026-07-06', weekdayIndex: 0, isToday: false, periods: [] }] } });
     await popup.load();
 
     popup.navigate(-1);

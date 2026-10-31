@@ -25,49 +25,40 @@ function minutesOfDay(date) {
   return date.getHours() * 60 + date.getMinutes();
 }
 
-function walkPeriods(times, isToday, nowMins) {
+function walkPeriods(periods, isToday, nowMins) {
   let workMins = 0;
   let pauseMins = 0;
   let qualifyingMins = 0;
-  let openPeriod = false;
+  let working = false;
 
-  for (let i = 0; i < times.length; i += 2) {
-    const start = toMinutes(times[i]);
-    const end = times[i + 1] ? toMinutes(times[i + 1]) : null;
-
-    if (end !== null) {
+  periods.forEach((period, i) => {
+    const start = toMinutes(period.start);
+    if (period.end) {
+      const end = toMinutes(period.end);
       workMins += end - start;
-      if (times[i + 2]) {
-        const gap = toMinutes(times[i + 2]) - end;
+      const next = periods[i + 1];
+      if (next) {
+        const gap = toMinutes(next.start) - end;
         pauseMins += gap;
         if (gap >= QUALIFYING_BREAK_MINS) qualifyingMins += gap;
       }
     } else if (isToday) {
       workMins += nowMins - start;
-      openPeriod = true;
+      working = true;
     }
-  }
+  });
 
-  const closed = times.length > 0 && times.length % 2 === 0;
-  if (closed && isToday) {
-    const awayMins = nowMins - toMinutes(times[times.length - 1]);
+  const last = periods[periods.length - 1];
+  let state = { name: last?.end ? 'done' : 'empty' };
+  if (working) {
+    state = { name: 'working' };
+  } else if (last?.end && isToday) {
+    const awayMins = nowMins - toMinutes(last.end);
     if (awayMins >= QUALIFYING_BREAK_MINS) qualifyingMins += awayMins;
+    if (awayMins >= 0) state = { name: 'away', awayMins };
   }
 
-  return { workMins, pauseMins, qualifyingMins, openPeriod };
-}
-
-function stateFor({ times, isToday, nowMins, openPeriod }) {
-  if (openPeriod) return { name: 'working' };
-
-  const closed = times.length > 0 && times.length % 2 === 0;
-  if (!closed) return { name: 'empty' };
-
-  if (isToday) {
-    const awayMins = nowMins - toMinutes(times[times.length - 1]);
-    if (awayMins >= 0) return { name: 'away', awayMins };
-  }
-  return { name: 'done' };
+  return { workMins, pauseMins, qualifyingMins, state };
 }
 
 function statusText(state, lastTime) {
@@ -107,16 +98,16 @@ function warningFor(workMins, qualifyingMins) {
   return missingMins > 0 ? `⚠️ Noch ${formatTime(missingMins)} Pause nötig` : null;
 }
 
-export function summarizeDay({ times, isToday, weekdayIndex, targetHours, now = new Date() }) {
-  const entries = times ?? [];
+export function summarizeDay({ periods, isToday, weekdayIndex, targetHours, now = new Date() }) {
+  const list = periods ?? [];
   const nowMins = minutesOfDay(now);
-  const { workMins, pauseMins, qualifyingMins, openPeriod } = walkPeriods(entries, isToday, nowMins);
-  const state = stateFor({ times: entries, isToday, nowMins, openPeriod });
+  const { workMins, pauseMins, qualifyingMins, state } = walkPeriods(list, isToday, nowMins);
+  const lastPeriod = list[list.length - 1];
 
   return {
     work: formatTime(workMins),
     pause: formatTime(pauseMins),
-    status: statusText(state, entries[entries.length - 1]),
+    status: statusText(state, lastPeriod && (lastPeriod.end ?? lastPeriod.start)),
     warning: warningFor(workMins, qualifyingMins),
     feierabend: feierabendFor({ state, workMins, nowMins, weekdayIndex, targetHours }),
   };

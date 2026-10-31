@@ -77,7 +77,7 @@ describe('init', () => {
     const { days } = await requestTimesheet(chrome, 42);
 
     expect(days).toEqual([
-      { date: '2026-07-07', weekdayIndex: 1, times: ['08:00', '12:00'], isToday: expect.any(Boolean) },
+      { date: '2026-07-07', weekdayIndex: 1, periods: [{ start: '08:00', end: '12:00' }], isToday: expect.any(Boolean) },
     ]);
   });
 

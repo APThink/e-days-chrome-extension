@@ -1,7 +1,7 @@
 import { serveTimesheet, requestTimesheet } from '../src/lib/timesheetLink.js';
 import { fakeChrome } from './fixtures/fakeChrome.js';
 
-const DAY = { date: '2026-07-07', weekdayIndex: 1, times: ['08:00', '12:00'], isToday: false };
+const DAY = { date: '2026-07-07', weekdayIndex: 1, periods: [{ start: '08:00', end: '12:00' }], isToday: false };
 
 describe('Timesheet link', () => {
   test('a request is answered with the days the page serves', async () => {
