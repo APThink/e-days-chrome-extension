@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { decorateTimesheet, INFO_CLASS, WARNING_CLASS } from '../src/lib/pageDecorator.js';
+import { decorateTimesheet, decoratePage, INFO_CLASS, WARNING_CLASS } from '../src/lib/pageDecorator.js';
 import { locateInfoRowAnchor } from '../src/lib/timesheetReader.js';
 import { PAST_DATE, buildDayContainer } from './fixtures/timesheetDom.js';
 
@@ -63,7 +63,7 @@ describe('decorateTimesheet', () => {
     describe('line', () => {
       const lineFor = (rows, date, now) => {
         buildDayContainer({ rows, date });
-        decorateTimesheet(document, new Date(now));
+        decorateTimesheet({ now: new Date(now) });
         return document.querySelector(`.${INFO_CLASS}`).textContent;
       };
 
@@ -91,6 +91,12 @@ describe('decorateTimesheet', () => {
         expect(text).toBe('Arbeit: 1h 30m · Pause: 0h 0m · 🔨 Arbeitest seit 09:00 · 🏁 Feierabend ca. 17:00');
       });
 
+      test('Feierabend uses the injected target hours', () => {
+        buildDayContainer({ rows: [{ start: '09:00' }], date: '2026-07-06' }); // Monday
+        decorateTimesheet({ targetHours: { Mo: 6 }, now: new Date('2026-07-06T10:30:00') });
+        expect(document.querySelector(`.${INFO_CLASS}`).textContent).toContain('Feierabend ca. 15:00');
+      });
+
       test('no Feierabend once the target is reached', () => {
         const text = lineFor([{ start: '09:00' }], '2026-07-06', '2026-07-06T17:00:00'); // 8h worked
         expect(text).not.toContain('Feierabend');
@@ -109,7 +115,7 @@ describe('decorateTimesheet', () => {
     describe('day styling', () => {
       test('today gets is-today', () => {
         buildDayContainer({ date: '2026-07-06', rows: [{ start: '08:00' }] });
-        decorateTimesheet(document, new Date('2026-07-06T10:00:00'));
+        decorateTimesheet({ now: new Date('2026-07-06T10:00:00') });
         const el = document.querySelector(`.${INFO_CLASS}`);
         expect(el.classList.contains('is-today')).toBe(true);
         expect(el.classList.contains('is-other')).toBe(false);
@@ -117,7 +123,7 @@ describe('decorateTimesheet', () => {
 
       test('any other day gets is-other', () => {
         buildDayContainer({ date: '2026-07-05', rows: [{ start: '08:00' }] });
-        decorateTimesheet(document, new Date('2026-07-06T10:00:00'));
+        decorateTimesheet({ now: new Date('2026-07-06T10:00:00') });
         const el = document.querySelector(`.${INFO_CLASS}`);
         expect(el.classList.contains('is-other')).toBe(true);
         expect(el.classList.contains('is-today')).toBe(false);
@@ -174,6 +180,90 @@ describe('decorateTimesheet', () => {
 
       expect(warningRow().textContent).toBe('');
       expect(warningRow().style.display).toBe('none');
+    });
+  });
+});
+
+describe('decoratePage', () => {
+  const infoText = () => document.querySelector(`.${INFO_CLASS}`)?.textContent;
+
+  function setEndTime(container, hh, mm) {
+    const endInputs = container.querySelectorAll('[class*="_col-time_"]')[1].querySelectorAll('input');
+    endInputs[0].value = hh;
+    endInputs[1].value = mm;
+  }
+
+  let stop;
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    stop?.();
+    stop = undefined;
+    vi.clearAllTimers();
+    vi.useRealTimers();
+  });
+
+  test('decorates the page immediately', () => {
+    buildDayContainer({ rows: [{ start: '08:00', end: '12:00' }] });
+    stop = decoratePage();
+    expect(infoText()).toContain('Arbeit: 4h 0m');
+  });
+
+  test('fallback polling picks up a value change within the first 10 seconds', () => {
+    const container = buildDayContainer({ rows: [{ start: '08:00' }] });
+    stop = decoratePage();
+    expect(infoText()).toContain('Keine Einträge');
+
+    setEndTime(container, '12', '00');
+    vi.advanceTimersByTime(500);
+
+    expect(infoText()).toContain('Arbeit: 4h 0m');
+  });
+
+  test('keeps updating every 60 seconds after the fallback window ends', () => {
+    const container = buildDayContainer({ rows: [{ start: '08:00' }] });
+    stop = decoratePage();
+    vi.advanceTimersByTime(11000);
+    expect(infoText()).toContain('Keine Einträge');
+
+    setEndTime(container, '12', '00');
+    vi.advanceTimersByTime(60000);
+
+    expect(infoText()).toContain('Arbeit: 4h 0m');
+  });
+
+  test('reacts to new day containers being added to the DOM (week navigation)', async () => {
+    stop = decoratePage();
+    buildDayContainer({ rows: [{ start: '08:00', end: '12:00' }] });
+
+    await vi.advanceTimersByTimeAsync(500);
+
+    expect(infoText()).toContain('Arbeit: 4h 0m');
+  });
+
+  describe('stop', () => {
+    test('ends the timers: later value changes are no longer picked up', () => {
+      const container = buildDayContainer({ rows: [{ start: '08:00' }] });
+      stop = decoratePage();
+
+      stop();
+      setEndTime(container, '12', '00');
+      vi.advanceTimersByTime(120000);
+
+      expect(infoText()).toContain('Keine Einträge');
+    });
+
+    test('ends the DOM observer: new day containers are no longer decorated', async () => {
+      stop = decoratePage();
+      stop();
+
+      buildDayContainer({ rows: [{ start: '08:00', end: '12:00' }] });
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(infoText()).toBeUndefined();
     });
   });
 });

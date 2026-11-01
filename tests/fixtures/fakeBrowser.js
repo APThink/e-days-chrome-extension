@@ -1,9 +1,9 @@
 export const ALLOWED_URL = 'https://example.e-days.com/TimeSubmission';
 
-export function fakeBrowser({ url = ALLOWED_URL, week = { days: [] }, readError, noTab } = {}) {
+// `week: null` models the active tab not being the Timesheet.
+export function fakeBrowser({ week = { days: [] }, readError } = {}) {
   return {
     opened: 0,
-    currentTab: async () => (noTab ? undefined : { id: 7, url }),
     readTimesheet: async () => {
       if (readError) throw new Error(readError);
       return week;

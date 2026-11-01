@@ -24,14 +24,20 @@ Domain terms for the e-days Tracker. Use these in code, tests and reviews.
 
 **Feierabend**: the projected end of today's workday: now plus the remaining Work to reach that weekday's target hours.
 
+**Target hours**: the per-weekday Soll-Arbeitszeit, as hours (`8`) or `"HH:MM"` (`'07:28'`). Read from config only at the entry points (`popup.js`, `contentEntry.js`) and injected; Day summary falls back to defaults (Mo–Fr 8h, Sa/So 0) for missing days.
+
 **Info row**: the line injected under a Day's header on the Timesheet (Work, Pause, status, Feierabend).
 
 **Warning row**: the blinking break warning injected directly under the Info row. Hidden when there is nothing to warn about.
 
-**Page decorator**: the module that keeps the Info row and Warning row of every Day in sync with the Timesheet (`decorateTimesheet`).
+**Page decorator**: the module that keeps the Info row and Warning row of every Day in sync with the Timesheet. `decoratePage({ targetHours, root })` decorates once, then watches the page (DOM observer, a 10s fallback poll for typed values, a 60s refresh) and returns `stop`; `decorateTimesheet({ targetHours, root, now })` is the single pass it repeats. Takes Target hours as a parameter; never reads config itself.
 
 **Popup**: the toolbar popup module (`createPopup`). Owns the selected weekday and the loaded Timesheet, and decides what the popup shows: a Day summary with navigation limits, or an error (wrong page, reload hint, Day not found). Returns plain view models; knows nothing about the DOM or `chrome`.
 
-**Browser port**: what the Popup needs from the browser: `currentTab()`, `readTimesheet(tabId)`, `openPage()`. `ChromeService` is the Chrome adapter; tests use an in-memory one (`tests/fixtures/fakeBrowser.js`).
+**Browser port**: what the Popup needs from the browser: `readTimesheet()` (the active tab's `{ days }`, or `null` when it is not the Timesheet; rejects with the reload hint when the page does not answer) and `openPage()`. `ChromeService` is the Chrome adapter and the only owner of the Timesheet URL (`allowedUrl`, matched with `startsWith`); the manifest's `matches` pattern states the same page in Chrome's syntax and is kept in step by hand. Tests use an in-memory port (`tests/fixtures/fakeBrowser.js`).
 
 **Timesheet link**: the module (`serveTimesheet`, `requestTimesheet`) that owns both ends of the content script ↔ popup exchange: the message, the `{ days }` response and the reload hint when no page answers. Takes `runtime`/`tabs` and the reader as parameters; knows nothing about the page layout.
+
+**Config**: `config.js` in the extension folder (`allowedUrl`, optional Target hours). Defined once, in `src/config.example.js`. Both entry points read the same file at runtime (the popup by import, the content script via `chrome.runtime.getURL`, hence `web_accessible_resources` in the manifest), so editing `dist/config.js` after a build changes the popup and the Info row alike. Never bundled into `content.js`.
+
+**Config loader**: the module (`loadConfig(importModule)`) that turns `config.js` into `{ allowedUrl, targetHours }` for both entry points. The way the file is fetched is passed in (popup: `import('./config.js')`; content script: `import(chrome.runtime.getURL('config.js'))`; tests: in-memory). Validates `allowedUrl` and the Target hours values (invalid days are dropped with a warning so Day summary defaults apply); rejects with a readable message when the file is unusable. The content script then falls back to default Target hours; the popup shows the message through `failedPopup`.

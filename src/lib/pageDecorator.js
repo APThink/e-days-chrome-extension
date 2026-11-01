@@ -1,20 +1,12 @@
 import { summarizeDay } from './daySummary.js';
 import { readTimesheet, locateInfoRowAnchor } from './timesheetReader.js';
-import { config } from '../config.js';
 
 export const INFO_CLASS = 'edays-tracker-day-info';
 export const WARNING_CLASS = 'edays-tracker-warning';
 const STYLE_ID = 'edays-tracker-styles';
-
-function summarize(day, now) {
-  return summarizeDay({
-    periods: day.periods,
-    isToday: day.isToday,
-    weekdayIndex: day.weekdayIndex,
-    targetHours: config.targetHours,
-    now,
-  });
-}
+const FALLBACK_POLL_MS = 500;
+const FALLBACK_WINDOW_MS = 10000;
+const REFRESH_MS = 60000;
 
 function infoLine(summary) {
   let text = `Arbeit: ${summary.work} · Pause: ${summary.pause} · ${summary.status}`;
@@ -79,12 +71,12 @@ function ensureWarningElement(infoEl) {
   return el;
 }
 
-export function decorateTimesheet(root = document, now = new Date()) {
+export function decorateTimesheet({ targetHours, root = document, now = new Date() } = {}) {
   readTimesheet(root, now).days.forEach((day) => {
     const anchor = locateInfoRowAnchor(day.date, root);
     if (!anchor) return;
     const el = ensureInfoElement(anchor, day.isToday);
-    const summary = summarize(day, now);
+    const summary = summarizeDay({ ...day, targetHours, now });
     const text = infoLine(summary);
     if (el.textContent !== text) {
       el.textContent = text;
@@ -97,4 +89,34 @@ export function decorateTimesheet(root = document, now = new Date()) {
     }
     warningEl.style.display = summary.warning ? '' : 'none';
   });
+}
+
+export function decoratePage({ targetHours, root = document } = {}) {
+  const decorate = () => decorateTimesheet({ targetHours, root });
+  decorate();
+
+  const observeTarget = document.getElementById('time-recording-content-wrapper') || document.body;
+
+  const observer = new MutationObserver(() => {
+    observer.disconnect();
+    decorate();
+    observer.observe(observeTarget, { childList: true, subtree: true });
+  });
+  observer.observe(observeTarget, { childList: true, subtree: true });
+
+  const fallbackStart = Date.now();
+  const fallbackInterval = setInterval(() => {
+    decorate();
+    if (Date.now() - fallbackStart > FALLBACK_WINDOW_MS) {
+      clearInterval(fallbackInterval);
+    }
+  }, FALLBACK_POLL_MS);
+
+  const refreshInterval = setInterval(decorate, REFRESH_MS);
+
+  return function stop() {
+    observer.disconnect();
+    clearInterval(fallbackInterval);
+    clearInterval(refreshInterval);
+  };
 }
