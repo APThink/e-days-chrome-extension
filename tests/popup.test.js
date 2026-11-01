@@ -1,9 +1,9 @@
-import { createPopup } from '../src/lib/popup.js';
-import { fakeBrowser, ALLOWED_URL, WEEK, WEDNESDAY_NOON } from './fixtures/fakeBrowser.js';
+import { createPopup, failedPopup } from '../src/lib/popup.js';
+import { fakeBrowser, WEEK, WEDNESDAY_NOON } from './fixtures/fakeBrowser.js';
 
 function popupFor(browserOptions) {
   const browser = fakeBrowser(browserOptions);
-  const popup = createPopup({ browser, allowedUrl: ALLOWED_URL, now: WEDNESDAY_NOON });
+  const popup = createPopup({ browser, now: WEDNESDAY_NOON });
   return { browser, popup };
 }
 
@@ -55,19 +55,13 @@ describe('Popup', () => {
   });
 
   test('offers to open the page when the tab is not the Timesheet', async () => {
-    const { popup } = popupFor({ url: 'https://example.com/' });
+    const { popup } = popupFor({ week: null });
 
     expect(await popup.load()).toEqual({
       kind: 'error',
       message: 'Öffne zuerst die Zeiterfassung',
       offerOpenPage: true,
     });
-  });
-
-  test('treats a missing tab as the wrong page', async () => {
-    const { popup } = popupFor({ noTab: true });
-
-    expect(await popup.load()).toMatchObject({ kind: 'error', offerOpenPage: true });
   });
 
   test('surfaces a read failure without offering to open the page', async () => {
@@ -82,5 +76,15 @@ describe('Popup', () => {
     popup.openPage();
 
     expect(browser.opened).toBe(1);
+  });
+});
+
+describe('failedPopup', () => {
+  test('shows the message as an error without offering to open the page', async () => {
+    const popup = failedPopup('config.js: allowedUrl fehlt');
+    const expected = { kind: 'error', message: 'config.js: allowedUrl fehlt', offerOpenPage: false };
+
+    expect(await popup.load()).toEqual(expected);
+    expect(popup.navigate(1)).toEqual(expected);
   });
 });

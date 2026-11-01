@@ -2,7 +2,7 @@
 import { readFileSync } from 'node:fs';
 import { createPopup } from '../src/lib/popup.js';
 import { mountPopup } from '../src/lib/popupView.js';
-import { fakeBrowser, ALLOWED_URL, WEEK, WEDNESDAY_NOON } from './fixtures/fakeBrowser.js';
+import { fakeBrowser, WEEK, WEDNESDAY_NOON } from './fixtures/fakeBrowser.js';
 
 const html = readFileSync('src/popup.html', 'utf8');
 const bodyHtml = html.match(/<body>([\s\S]*)<\/body>/)[1].replace(/<script[\s\S]*?<\/script>/, '');
@@ -13,7 +13,7 @@ const hidden = (id) => document.getElementById(id).classList.contains('hidden');
 async function mount(browserOptions) {
   document.body.innerHTML = bodyHtml;
   const browser = fakeBrowser(browserOptions);
-  await mountPopup(document, createPopup({ browser, allowedUrl: ALLOWED_URL, now: WEDNESDAY_NOON }));
+  await mountPopup(document, createPopup({ browser, now: WEDNESDAY_NOON }));
   return browser;
 }
 
@@ -38,7 +38,7 @@ describe('popup view', () => {
   });
 
   test('shows the error and the go-to-page button on the wrong page', async () => {
-    const browser = await mount({ url: 'https://example.com/' });
+    const browser = await mount({ week: null });
 
     expect(text('status')).toBe('❌ Öffne zuerst die Zeiterfassung');
     expect(hidden('content')).toBe(true);

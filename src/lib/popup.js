@@ -10,7 +10,7 @@ function errorView(message) {
   return { kind: 'error', message, offerOpenPage: false };
 }
 
-export function createPopup({ browser, allowedUrl, targetHours, now = () => new Date() }) {
+export function createPopup({ browser, targetHours, now = () => new Date() }) {
   let weekdayIndex = getWeekdayIndex(now());
   let week = null;
 
@@ -34,9 +34,9 @@ export function createPopup({ browser, allowedUrl, targetHours, now = () => new 
   return {
     async load() {
       try {
-        const tab = await browser.currentTab();
-        if (!tab?.url?.startsWith(allowedUrl)) return WRONG_PAGE;
-        week = await browser.readTimesheet(tab.id);
+        const loaded = await browser.readTimesheet();
+        if (!loaded) return WRONG_PAGE;
+        week = loaded;
         return view();
       } catch (error) {
         return errorView(error.message);
@@ -53,4 +53,10 @@ export function createPopup({ browser, allowedUrl, targetHours, now = () => new 
       browser.openPage();
     },
   };
+}
+
+// Stands in for the Popup when it cannot even start (e.g. unusable config.js).
+export function failedPopup(message) {
+  const view = errorView(message);
+  return { load: async () => view, navigate: () => view, openPage() {} };
 }

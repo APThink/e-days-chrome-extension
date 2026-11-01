@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
-import { copyFileSync, writeFileSync, mkdirSync, existsSync, readdirSync } from 'fs';
+import { copyFileSync, mkdirSync, existsSync, readdirSync } from 'fs';
 
 export default defineConfig({
   build: {
@@ -38,14 +38,10 @@ export default defineConfig({
           });
         }
 
-        if (existsSync('src/config.js')) {
-          copyFileSync('src/config.js', 'dist/config.js');
-        } else if (!existsSync('dist/config.js')) {
-          const configContent = `export const config = {
-  allowedUrl: 'https://your-company.e-days.com/TimeSubmission'
-};`;
-          writeFileSync('dist/config.js', configContent);
+        if (!existsSync('src/config.js')) {
+          throw new Error('src/config.js is missing. Run `npm run build` (it creates it from src/config.example.js first).');
         }
+        copyFileSync('src/config.js', 'dist/config.js');
       }
     }
   ]

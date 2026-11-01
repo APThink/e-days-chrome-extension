@@ -5,19 +5,21 @@ export class ChromeService {
     this.allowedUrl = allowedUrl;
   }
 
-  async currentTab() {
+  async readTimesheet() {
+    const tab = await this.#currentTab();
+    if (!tab?.url?.startsWith(this.allowedUrl)) return null;
+    return requestTimesheet(chrome, tab.id);
+  }
+
+  openPage() {
+    chrome.tabs.create({ url: this.allowedUrl });
+  }
+
+  #currentTab() {
     return new Promise((resolve) => {
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         resolve(tabs[0]);
       });
     });
-  }
-
-  readTimesheet(tabId) {
-    return requestTimesheet(chrome, tabId);
-  }
-
-  openPage() {
-    chrome.tabs.create({ url: this.allowedUrl });
   }
 }
